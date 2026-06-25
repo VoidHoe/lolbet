@@ -84,8 +84,35 @@ app.post('/api/bet', requireAuth, async (req, res) => {
   res.json(await store.placeBet(req.username, matchId, bet));
 });
 
+// Bet history, enriched with human-readable legs resolved from each event's
+// board (titles + side labels), so the UI can show full ticket detail.
 app.get('/api/bets', requireAuth, async (req, res) => {
-  res.json(await store.listBets(req.username));
+  const rows = await store.listBets(req.username);
+  const boardCache = {};
+  const out = [];
+  for (const row of rows) {
+    const bet = typeof row.bet === 'string' ? JSON.parse(row.bet) : row.bet;
+    if (boardCache[row.match_id] === undefined) {
+      const ev = await events.getEvent(row.match_id);
+      boardCache[row.match_id] = (ev && ev.board) || [];
+    }
+    const board = boardCache[row.match_id];
+    const rawLegs = bet.type === 'parlay' ? bet.picks : [{ marketId: bet.marketId, side: bet.side, odds: bet.odds }];
+    const legs = rawLegs.map((p) => {
+      const m = board.find((x) => x.id === p.marketId);
+      return {
+        title: m ? m.title : p.marketId,
+        side: m ? (p.side === 'yes' ? m.yes.label : m.no.label) : p.side,
+        odds: p.odds,
+      };
+    });
+    const combinedOdds = legs.reduce((a, l) => a * (l.odds || 1), 1);
+    out.push({
+      matchId: row.match_id, stake: row.stake, status: row.status, payout: row.payout,
+      createdAt: row.created_at, type: bet.type || 'single', legs, combinedOdds,
+    });
+  }
+  res.json(out);
 });
 
 module.exports = app;
