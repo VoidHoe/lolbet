@@ -5,6 +5,7 @@
   "description": "De-risk prototype + betting engine: auto-settle bets from real LoL games via the Riot API.",
   "engines": { "node": ">=20.0.0" },
   "scripts": {
+    "start": "node server/index.js",
     "backtest": "node src/index.js backtest",
     "watch": "node src/index.js watch",
     "live": "node src/index.js live",
