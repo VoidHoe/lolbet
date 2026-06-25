@@ -9,6 +9,6 @@ describe('store (no DATABASE_URL)', () => {
     await expect(store.getBalance('gd')).resolves.toBe(1000);
     const r = await store.placeBet('gd', 'EUW1_1', { stake: 50, odds: 2 });
     expect(r.ok).toBe(false);
-    await expect(store.settleBets('EUW1_1', [])).resolves.toEqual({ settled: 0 });
+    await expect(store.settleBets('EUW1_1', { win: false })).resolves.toEqual({ settled: 0 });
   });
 });

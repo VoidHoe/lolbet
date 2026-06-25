@@ -59,7 +59,7 @@ async function placeBet(username, matchId, bet) {
 }
 
 // Settle all open bets for a finished match against its board.
-async function settleBets(matchId, board) {
+async function settleBets(matchId, gameStats) {
   try {
     const open = await db.query(
       `SELECT id, username, bet FROM bets WHERE match_id = $1 AND status = 'open'`,
@@ -68,7 +68,7 @@ async function settleBets(matchId, board) {
     let settled = 0;
     for (const row of open.rows) {
       const bet = typeof row.bet === 'string' ? JSON.parse(row.bet) : row.bet;
-      const result = bet.type === 'parlay' ? settleParlayBet(bet, board) : settleSingle(bet, board);
+      const result = bet.type === 'parlay' ? settleParlayBet(bet, gameStats) : settleSingle(bet, gameStats);
       await db.query('BEGIN');
       await db.query(
         `UPDATE bets SET status = $2, payout = $3 WHERE id = $1`,

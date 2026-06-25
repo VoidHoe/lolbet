@@ -100,6 +100,7 @@ function buildBoard(history, gameStats) {
       const yesLabel = def.kind === 'ou' ? `+ de ${def.line}` : def.yes;
       const noLabel = def.kind === 'ou' ? `- de ${def.line}` : def.no;
       return {
+        id: def.id,
         title: def.title(gameStats),
         sample: price.n,
         hits: price.hits,
@@ -107,6 +108,44 @@ function buildBoard(history, gameStats) {
         no: { label: noLabel, odds: price.oddsNo, won: !yesWon },
       };
     });
+}
+
+// Look up a def by id, throw if unknown.
+function defById(id) {
+  const def = MARKET_DEFS.find((d) => d.id === id);
+  if (!def) throw new Error(`Marché inconnu: ${id}`);
+  return def;
+}
+
+// Return yes/no labels for a def (mirrors buildBoard label logic).
+function labelsFor(def) {
+  return def.kind === 'ou'
+    ? { yes: `+ de ${def.line}`, no: `- de ${def.line}` }
+    : { yes: def.yes, no: def.no };
+}
+
+// Price all applicable markets for a given mode — no settlement, no won field.
+function priceBoard(history, meta) {
+  const mode = meta.gameMode;
+  const sameMode = history.filter((s) => s.gameMode === mode).slice(0, 5);
+  return MARKET_DEFS
+    .filter((def) => def.mode === 'all' || mode === 'CLASSIC')
+    .map((def) => {
+      const price = priceMarket(def, sameMode);
+      const lab = labelsFor(def);
+      return {
+        id: def.id,
+        title: def.title({ champion: meta.champion }),
+        yes: { label: lab.yes, odds: price.oddsYes },
+        no: { label: lab.no, odds: price.oddsNo },
+      };
+    });
+}
+
+// Resolve whether a side ('yes'|'no') of a given market won, given final game stats.
+function marketWon(marketId, side, gameStats) {
+  const yesWon = settleYes(defById(marketId), gameStats);
+  return side === 'yes' ? yesWon : !yesWon;
 }
 
 // A combiné/parlay = several picks, all must win. Odds multiply.
@@ -117,4 +156,4 @@ function settleParlay(picks, stake) {
   return { combinedOdds, allWon, payout };
 }
 
-module.exports = { LINES, MARKET_DEFS, extractStats, priceMarket, buildBoard, settleParlay };
+module.exports = { LINES, MARKET_DEFS, extractStats, priceMarket, settleYes, buildBoard, priceBoard, marketWon, settleParlay };
