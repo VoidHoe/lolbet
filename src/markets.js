@@ -142,6 +142,32 @@ function priceBoard(history, meta) {
     });
 }
 
+// Clean per-player title for a def (no champion injected).
+function baseTitle(def) {
+  return def.id === 'win' ? 'Résultat' : def.title({});
+}
+
+// Combined board for several players in one game. players: [{slot,puuid,name,history}].
+function priceMultiBoard(players, gameMode) {
+  const board = [];
+  for (const p of players) {
+    const sameMode = (p.history || []).filter((s) => s.gameMode === gameMode).slice(0, 5);
+    for (const def of MARKET_DEFS) {
+      if (!(def.mode === 'all' || gameMode === 'CLASSIC')) continue;
+      const price = priceMarket(def, sameMode);
+      const lab = labelsFor(def);
+      board.push({
+        id: p.slot + ':' + def.id,
+        kind: 'player', slot: p.slot, puuid: p.puuid, name: p.name, defId: def.id,
+        title: p.name + ' · ' + baseTitle(def),
+        yes: { label: lab.yes, odds: price.oddsYes },
+        no: { label: lab.no, odds: price.oddsNo },
+      });
+    }
+  }
+  return board;
+}
+
 // Resolve whether a side ('yes'|'no') of a given market won, given final game stats.
 function marketWon(marketId, side, gameStats) {
   const yesWon = settleYes(defById(marketId), gameStats);
@@ -156,4 +182,4 @@ function settleParlay(picks, stake) {
   return { combinedOdds, allWon, payout };
 }
 
-module.exports = { LINES, MARKET_DEFS, extractStats, priceMarket, settleYes, buildBoard, priceBoard, marketWon, settleParlay };
+module.exports = { LINES, MARKET_DEFS, extractStats, priceMarket, settleYes, buildBoard, priceBoard, marketWon, settleParlay, priceMultiBoard };

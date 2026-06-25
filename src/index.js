@@ -144,7 +144,8 @@ async function demoBet(riotId, matchId) {
   const id = matchId || (await getRecentMatchIds(puuid, 1, { type: 'ranked' }))[0];
   if (!id) { console.log('Aucune game ranked trouvée.'); return; }
 
-  const gameStats = extractStats(await getMatch(id), puuid);
+  const match = await getMatch(id);
+  const gameStats = extractStats(match, puuid);
   const history = await getRecentStats(puuid, 12, id);
   const board = priceBoard(history, { gameMode: gameStats.gameMode, champion: gameStats.champion });
 
@@ -156,7 +157,7 @@ async function demoBet(riotId, matchId) {
   console.log(`\n💰 ${user}: solde ${before} → pari 50 @${bet.odds.toFixed(2)} sur WIN`);
   if (!placed.ok) { console.log(`   ❌ pari refusé (${placed.error}). DB branchée ? (DATABASE_URL)`); return; }
 
-  const { settled } = await settleBets(id, gameStats);
+  const { settled } = await settleBets({ match_id: id, board, puuid }, match);
   const after = await getBalance(user);
   console.log(`   réglé (${settled} pari) → solde ${after} (${after - before >= 0 ? '+' : ''}${after - before})`);
 }
