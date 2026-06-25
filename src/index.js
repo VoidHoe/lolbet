@@ -6,7 +6,7 @@
 // Default Riot ID: GraveDigger#v0id (EUW).
 
 const { getPuuid, getRecentMatchIds, getMatch } = require('./riot');
-const { extractStats, buildBoard, settleParlay } = require('./markets');
+const { extractStats, buildBoard, settleParlay, priceBoard } = require('./markets');
 const { getRecentStats } = require('./form');
 const { getLiveGame, summarize } = require('./liveClient');
 const { getBalance, placeBet, settleBets } = require('../server/store');
@@ -138,26 +138,24 @@ async function live() {
 }
 
 async function demoBet(riotId, matchId) {
-  await db.init(); // no-op if DATABASE_URL unset
+  await db.init();
   const puuid = await getPuuid(riotId);
   const id = matchId || (await getRecentMatchIds(puuid, 1, { type: 'ranked' }))[0];
   if (!id) { console.log('Aucune game ranked trouvée.'); return; }
 
   const gameStats = extractStats(await getMatch(id), puuid);
   const history = await getRecentStats(puuid, 12, id);
-  const board = buildBoard(history, gameStats);
+  const board = priceBoard(history, { gameMode: gameStats.gameMode, champion: gameStats.champion });
 
   const user = 'demo';
   const before = await getBalance(user);
-  // Bet 50 on the player's WIN at the frozen opening odds.
-  const winMarket = board.find((m) => m.title.startsWith('Résultat'));
-  const bet = makeSingle({ player: user, board, marketTitle: winMarket.title, side: 'yes', stake: 50 });
+  const bet = makeSingle({ player: user, board, marketId: 'win', side: 'yes', stake: 50 });
 
   const placed = await placeBet(user, id, bet);
-  console.log(`\n💰 ${user}: solde ${before} → pari 50 @${bet.odds.toFixed(2)} sur ${winMarket.title} WIN`);
+  console.log(`\n💰 ${user}: solde ${before} → pari 50 @${bet.odds.toFixed(2)} sur WIN`);
   if (!placed.ok) { console.log(`   ❌ pari refusé (${placed.error}). DB branchée ? (DATABASE_URL)`); return; }
 
-  const { settled } = await settleBets(id, board);
+  const { settled } = await settleBets(id, gameStats);
   const after = await getBalance(user);
   console.log(`   réglé (${settled} pari) → solde ${after} (${after - before >= 0 ? '+' : ''}${after - before})`);
 }
