@@ -2,7 +2,9 @@
 // match-v5. No deps: Node 20+ has global fetch.
 
 const REGIONAL = 'https://europe.api.riotgames.com';
-const PLATFORM = 'https://euw1.api.riotgames.com'; // spectator-v5 uses platform routing
+// Platforms we look for a live game on (spectator-v5 uses platform routing).
+// EUW + EUNE — both resolve to the same `europe` regional routing for match/account.
+const PLATFORMS = ['euw1', 'eun1'];
 
 function key() {
   const k = process.env.RIOT_API_KEY;
@@ -59,14 +61,19 @@ async function getMatch(matchId) {
   return riotGet(`${REGIONAL}/lol/match/v5/matches/${matchId}`);
 }
 
-// Current live game for a puuid, or null if they are not in a game.
+// Current live game for a puuid across supported platforms (EUW, EUNE), or null
+// if they are not in a game anywhere. The returned object's `platformId` tells
+// you which shard the game is on (used to build the match id).
 async function getActiveGame(puuid) {
-  try {
-    return await riotGet(`${PLATFORM}/lol/spectator/v5/active-games/by-summoner/${puuid}`);
-  } catch (e) {
-    if (/\b404\b/.test(e.message)) return null; // not currently in a game
-    throw e;
+  for (const p of PLATFORMS) {
+    try {
+      return await riotGet(`https://${p}.api.riotgames.com/lol/spectator/v5/active-games/by-summoner/${puuid}`);
+    } catch (e) {
+      if (/\b404\b/.test(e.message)) continue; // not in a game on this platform — try next
+      throw e;
+    }
   }
+  return null;
 }
 
 module.exports = { getPuuid, getRecentMatchIds, getMatch, getActiveGame };

@@ -11,7 +11,7 @@ const store = require('./store');
 
 const RANKED_QUEUES = [420, 440];
 const isRanked = (queueId) => RANKED_QUEUES.includes(queueId);
-const matchIdFor = (gameId) => `EUW1_${gameId}`;
+const matchIdFor = (gameId, platformId = 'EUW1') => `${platformId}_${gameId}`;
 
 // Open events for any linked account currently in a new ranked game.
 async function openNewEvents() {
@@ -22,7 +22,7 @@ async function openNewEvents() {
     try { game = await getActiveGame(acc.puuid); } catch (e) { console.error('[poll] active:', e.message); continue; }
     if (!game || !isRanked(game.gameQueueConfigId)) continue;
 
-    const matchId = matchIdFor(game.gameId);
+    const matchId = matchIdFor(game.gameId, game.platformId); // EUW1_… or EUN1_…
     if (await events.getEvent(matchId)) continue; // already tracked
 
     const champion = String(acc.riot_id).split('#')[0]; // display name

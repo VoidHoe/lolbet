@@ -11,6 +11,8 @@ test('isRanked accepts 420/440, rejects others', () => {
   expect(isRanked(undefined)).toBe(false);
 });
 
-test('matchIdFor builds the EUW match id from a spectator gameId', () => {
-  expect(matchIdFor(7898651765)).toBe('EUW1_7898651765');
+test('matchIdFor builds the match id from a spectator gameId + platformId', () => {
+  expect(matchIdFor(7898651765)).toBe('EUW1_7898651765');       // default EUW
+  expect(matchIdFor(7898651765, 'EUW1')).toBe('EUW1_7898651765');
+  expect(matchIdFor(123, 'EUN1')).toBe('EUN1_123');             // EUNE
 });
