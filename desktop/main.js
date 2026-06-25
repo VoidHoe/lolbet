@@ -7,7 +7,9 @@ const path = require('path');
 const Store = require('electron-store');
 
 const store = new Store();
-const DEFAULT_URL = 'http://localhost:3000';
+// Shared backend baked in so a fresh install just works (zero config). The
+// "Serveur…" menu can override it for local dev or a different server.
+const DEFAULT_URL = 'https://lolbet-production.up.railway.app';
 
 let win;
 let settingsWin;
