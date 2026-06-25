@@ -2,6 +2,7 @@
 // match-v5. No deps: Node 20+ has global fetch.
 
 const REGIONAL = 'https://europe.api.riotgames.com';
+const PLATFORM = 'https://euw1.api.riotgames.com'; // spectator-v5 uses platform routing
 
 function key() {
   const k = process.env.RIOT_API_KEY;
@@ -58,4 +59,14 @@ async function getMatch(matchId) {
   return riotGet(`${REGIONAL}/lol/match/v5/matches/${matchId}`);
 }
 
-module.exports = { getPuuid, getRecentMatchIds, getMatch };
+// Current live game for a puuid, or null if they are not in a game.
+async function getActiveGame(puuid) {
+  try {
+    return await riotGet(`${PLATFORM}/lol/spectator/v5/active-games/by-summoner/${puuid}`);
+  } catch (e) {
+    if (/\b404\b/.test(e.message)) return null; // not currently in a game
+    throw e;
+  }
+}
+
+module.exports = { getPuuid, getRecentMatchIds, getMatch, getActiveGame };

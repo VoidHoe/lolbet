@@ -77,4 +77,14 @@ async function unlinkRiot(username, riotId) {
   }
 }
 
-module.exports = { register, authenticate, linkRiot, listRiot, unlinkRiot };
+async function allLinked() {
+  try {
+    const res = await db.query(`SELECT username, riot_id, puuid FROM riot_accounts ORDER BY created_at`);
+    return res.rows;
+  } catch (err) {
+    if (!isDisabled(err)) console.error('[accounts] allLinked:', err.message);
+    return [];
+  }
+}
+
+module.exports = { register, authenticate, linkRiot, listRiot, unlinkRiot, allLinked };

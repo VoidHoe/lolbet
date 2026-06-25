@@ -11,5 +11,6 @@ describe('accounts (no DATABASE_URL)', () => {
     expect(await accounts.linkRiot('gd', 'GraveDigger#v0id', 'PUUID')).toEqual({ ok: false, error: 'db' });
     expect(await accounts.listRiot('gd')).toEqual([]);
     expect(await accounts.unlinkRiot('gd', 'GraveDigger#v0id')).toEqual({ ok: false, removed: 0 });
+    expect(await accounts.allLinked()).toEqual([]);
   });
 });

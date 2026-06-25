@@ -13,6 +13,7 @@ const { getBalance, placeBet, settleBets } = require('../server/store');
 const { makeSingle } = require('../server/bets');
 const db = require('../server/db');
 const accounts = require('../server/accounts');
+const { pollOnce } = require('../server/poller');
 
 const STAKE = 50;
 const FORM_WINDOW = 12;    // recent games fetched to find ~5 of the right mode
@@ -160,6 +161,20 @@ async function demoBet(riotId, matchId) {
   console.log(`   réglé (${settled} pari) → solde ${after} (${after - before >= 0 ? '+' : ''}${after - before})`);
 }
 
+async function poll() {
+  await db.init();
+  console.log('🛰️  Poller — détecte les ranked en cours des comptes liés, ouvre/règle les events. (Ctrl+C pour stopper)');
+  const tick = async () => {
+    try {
+      const { opened, settled } = await pollOnce();
+      if (opened || settled) console.log(`[poll] +${opened} ouverts, ${settled} réglés`);
+      else process.stdout.write('.');
+    } catch (e) { console.error('\n[poll]', e.message); }
+  };
+  await tick();
+  setInterval(tick, 30000);
+}
+
 async function register() {
   await db.init();
   const [username, password] = process.argv.slice(3);
@@ -188,7 +203,8 @@ async function link() {
 async function main() {
   const [mode = 'backtest', riotId = 'GraveDigger#v0id', matchId] = process.argv.slice(2);
   try {
-    if (mode === 'register') await register();
+    if (mode === 'poll') await poll();
+    else if (mode === 'register') await register();
     else if (mode === 'link') await link();
     else if (mode === 'demo-bet') await demoBet(riotId, matchId);
     else if (mode === 'live') await live();
