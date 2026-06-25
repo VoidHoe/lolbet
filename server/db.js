@@ -50,6 +50,21 @@ async function init() {
       ref        TEXT,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )`);
+  await query(`
+    CREATE TABLE IF NOT EXISTS users (
+      username      TEXT PRIMARY KEY,
+      password_hash TEXT NOT NULL,
+      created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`);
+  await query(`
+    CREATE TABLE IF NOT EXISTS riot_accounts (
+      id         BIGSERIAL PRIMARY KEY,
+      username   TEXT NOT NULL REFERENCES users(username) ON DELETE CASCADE,
+      riot_id    TEXT NOT NULL,
+      puuid      TEXT NOT NULL UNIQUE,
+      region     TEXT NOT NULL DEFAULT 'euw',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`);
   return true;
 }
 
