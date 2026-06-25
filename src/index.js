@@ -174,7 +174,13 @@ async function link() {
   await db.init();
   const [username, riotId] = process.argv.slice(3);
   if (!username || !riotId) { console.log('usage: link <username> <RiotID (Pseudo#TAG)>'); return; }
-  const puuid = await getPuuid(riotId); // trust-based: just resolves, no OAuth
+  let puuid;
+  try {
+    puuid = await getPuuid(riotId); // trust-based: just resolves, no OAuth
+  } catch (e) {
+    console.log(`❌ Riot ID introuvable ou invalide (${riotId}) : ${e.message}`);
+    return;
+  }
   const r = await accounts.linkRiot(username, riotId, puuid);
   console.log(r.ok ? `✅ ${riotId} lié à ${username}` : `❌ échec (${r.error})`);
   const list = await accounts.listRiot(username);
