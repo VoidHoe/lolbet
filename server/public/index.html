@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>lolbet</title>
+<style>
+  :root { --bg:#0e1015; --card:#1a1d27; --ink:#e7e9ee; --mut:#8a90a2; --acc:#f0b132; --win:#3ad17a; --lose:#e2545a; }
+  * { box-sizing:border-box; } body { margin:0; font-family:system-ui,sans-serif; background:var(--bg); color:var(--ink); }
+  header { padding:14px 18px; background:var(--card); display:flex; justify-content:space-between; align-items:center; }
+  header b { color:var(--acc); } .bal { color:var(--acc); font-weight:700; }
+  main { max-width:760px; margin:0 auto; padding:18px; }
+  .card { background:var(--card); border-radius:12px; padding:16px; margin-bottom:16px; }
+  h2 { margin:0 0 10px; font-size:15px; color:var(--mut); text-transform:uppercase; letter-spacing:.5px; }
+  input,button { font:inherit; padding:9px 12px; border-radius:8px; border:1px solid #2b2f3c; background:#11141c; color:var(--ink); }
+  button { background:var(--acc); color:#1a1205; border:0; font-weight:700; cursor:pointer; }
+  button.ghost { background:#222633; color:var(--ink); }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .ev { border:1px solid #262a36; border-radius:10px; padding:12px; margin-bottom:10px; }
+  .ev h3 { margin:0 0 8px; font-size:15px; }
+  .mkt { display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-top:1px solid #20242f; }
+  .mkt .sides { display:flex; gap:6px; }
+  .odd { background:#222633; border:0; color:var(--ink); padding:6px 9px; border-radius:7px; cursor:pointer; font-weight:600; }
+  .odd b { color:var(--acc); }
+  .muted { color:var(--mut); font-size:13px; }
+  .bet { display:flex; justify-content:space-between; padding:6px 0; border-top:1px solid #20242f; font-size:14px; }
+  .won { color:var(--win); } .lost { color:var(--lose); }
+  .hide { display:none; }
+</style>
+</head>
+<body>
+<header><span><b>lolbet</b> 🎰</span><span id="who" class="muted"></span></header>
+<main>
+  <div class="card" id="authCard">
+    <h2>Connexion</h2>
+    <div class="row">
+      <input id="u" placeholder="pseudo" /><input id="p" type="password" placeholder="mot de passe" />
+      <button onclick="login()">Login</button><button class="ghost" onclick="register()">Créer</button>
+    </div>
+    <div id="authMsg" class="muted"></div>
+  </div>
+
+  <div id="app" class="hide">
+    <div class="card">
+      <h2>Mes comptes LoL</h2>
+      <div id="accs" class="muted"></div>
+      <div class="row" style="margin-top:8px">
+        <input id="riot" placeholder="Pseudo#TAG" /><button onclick="link()">Lier</button>
+      </div>
+      <div id="linkMsg" class="muted"></div>
+    </div>
+
+    <div class="card">
+      <h2>Paris en cours</h2>
+      <div id="events" class="muted">Aucun event ouvert. Lance une ranked (avec le poller actif) 👀</div>
+    </div>
+
+    <div class="card">
+      <h2>Mes paris</h2>
+      <div id="bets" class="muted">—</div>
+    </div>
+    <button class="ghost" onclick="logout()">Déconnexion</button>
+  </div>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+const api = (p, opt) => fetch('/api' + p, Object.assign({ headers: { 'Content-Type': 'application/json' } }, opt)).then((r) => r.json());
+
+async function refresh() {
+  const me = await api('/me').catch(() => null);
+  if (!me || !me.username) { $('authCard').classList.remove('hide'); $('app').classList.add('hide'); $('who').textContent = ''; return; }
+  $('authCard').classList.add('hide'); $('app').classList.remove('hide');
+  $('who').innerHTML = me.username + ' · <span class="bal">' + me.balance + ' Clout</span>';
+  renderAccounts(); renderEvents(); renderBets();
+}
+async function register() {
+  const r = await api('/register', { method:'POST', body: JSON.stringify({ username:$('u').value, password:$('p').value }) });
+  $('authMsg').textContent = r.ok ? 'Compte créé, connecte-toi.' : 'Échec: ' + r.error;
+}
+async function login() {
+  const r = await api('/login', { method:'POST', body: JSON.stringify({ username:$('u').value, password:$('p').value }) });
+  if (r.ok) refresh(); else $('authMsg').textContent = 'Échec: ' + r.error;
+}
+async function logout() { await api('/logout', { method:'POST' }); refresh(); }
+async function link() {
+  const r = await api('/link', { method:'POST', body: JSON.stringify({ riotId:$('riot').value }) });
+  $('linkMsg').textContent = r.ok ? 'Lié ✅' : 'Échec: ' + r.error; renderAccounts();
+}
+async function renderAccounts() {
+  const a = await api('/accounts');
+  $('accs').textContent = a.length ? a.map((x) => x.riot_id).join(' · ') : 'aucun compte lié';
+}
+async function renderEvents() {
+  const evs = await api('/events');
+  if (!evs.length) { $('events').textContent = 'Aucun event ouvert.'; return; }
+  $('events').innerHTML = evs.map((ev) => {
+    const mkts = (ev.board || []).map((m) =>
+      '<div class="mkt"><span>' + m.title + '</span><span class="sides">' +
+      '<button class="odd" onclick="bet(\'' + ev.match_id + '\',\'' + m.id + '\',\'yes\')">' + m.yes.label + ' <b>' + m.yes.odds.toFixed(2) + '</b></button>' +
+      '<button class="odd" onclick="bet(\'' + ev.match_id + '\',\'' + m.id + '\',\'no\')">' + m.no.label + ' <b>' + m.no.odds.toFixed(2) + '</b></button>' +
+      '</span></div>').join('');
+    return '<div class="ev"><h3>🎮 ' + ev.champion + ' <span class="muted">(' + ev.riot_id + ')</span></h3>' + mkts + '</div>';
+  }).join('');
+}
+async function bet(matchId, marketId, side) {
+  const stake = Number(prompt('Mise (Clout) ?', '50'));
+  if (!stake) return;
+  const r = await api('/bet', { method:'POST', body: JSON.stringify({ matchId, marketId, side, stake }) });
+  if (r.ok) refresh(); else alert('Pari refusé: ' + r.error);
+}
+async function renderBets() {
+  const bs = await api('/bets');
+  if (!bs.length) { $('bets').textContent = 'aucun pari'; return; }
+  $('bets').innerHTML = bs.map((b) => {
+    const cls = b.status === 'won' ? 'won' : b.status === 'lost' ? 'lost' : 'muted';
+    const res = b.status === 'open' ? 'en cours' : b.status === 'won' ? '+' + b.payout : 'perdu';
+    return '<div class="bet"><span>' + b.match_id + ' · ' + b.stake + '</span><span class="' + cls + '">' + res + '</span></div>';
+  }).join('');
+}
+refresh();
+</script>
+</body>
+</html>
