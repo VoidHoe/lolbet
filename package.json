@@ -9,8 +9,9 @@
     "watch": "node src/index.js watch",
     "live": "node src/index.js live",
     "demo-bet": "node src/index.js demo-bet",
+    "serve": "node server/index.js",
     "test": "jest"
   },
-  "dependencies": { "pg": "^8.11.3" },
-  "devDependencies": { "jest": "^29.7.0" }
+  "dependencies": { "pg": "^8.11.3", "express": "^4.19.2" },
+  "devDependencies": { "jest": "^29.7.0", "supertest": "^6.3.4" }
 }
