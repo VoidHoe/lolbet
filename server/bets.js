@@ -1,13 +1,13 @@
 // server/bets.js
-// Pure bet lifecycle on a board produced by src/markets.buildBoard. Odds are
-// frozen into the bet at placement; settlement reads the won-flag off the board.
+// Pure bet lifecycle. Bets reference a market by id, freeze odds from the priced
+// board at placement, and settle against the finished game's stats.
 
-const { settleParlay } = require('../src/markets');
+const { marketWon, settleParlay } = require('../src/markets');
 const { payout } = require('./economy');
 
-function findMarket(board, title) {
-  const m = board.find((x) => x.title === title);
-  if (!m) throw new Error(`Marché inconnu: ${title}`);
+function findMarket(board, id) {
+  const m = board.find((x) => x.id === id);
+  if (!m) throw new Error(`Marché inconnu: ${id}`);
   return m;
 }
 
@@ -16,28 +16,28 @@ function sideOf(market, side) {
   return market[side];
 }
 
-function makeSingle({ player, board, marketTitle, side, stake }) {
-  const sel = sideOf(findMarket(board, marketTitle), side);
-  return { player, type: 'single', marketTitle, side, stake, odds: sel.odds };
+function makeSingle({ player, board, marketId, side, stake }) {
+  const sel = sideOf(findMarket(board, marketId), side);
+  return { player, type: 'single', marketId, side, stake, odds: sel.odds };
 }
 
-function settleSingle(bet, board) {
-  const won = sideOf(findMarket(board, bet.marketTitle), bet.side).won;
+function settleSingle(bet, gameStats) {
+  const won = marketWon(bet.marketId, bet.side, gameStats);
   return { won, payout: payout(bet.stake, bet.odds, won) };
 }
 
 function makeParlay({ player, board, picks, stake }) {
   const legs = picks.map((p) => {
-    const sel = sideOf(findMarket(board, p.marketTitle), p.side);
-    return { marketTitle: p.marketTitle, side: p.side, odds: sel.odds };
+    const sel = sideOf(findMarket(board, p.marketId), p.side);
+    return { marketId: p.marketId, side: p.side, odds: sel.odds };
   });
   return { player, type: 'parlay', picks: legs, stake };
 }
 
-function settleParlayBet(bet, board) {
+function settleParlayBet(bet, gameStats) {
   const legs = bet.picks.map((p) => ({
     odds: p.odds,
-    won: sideOf(findMarket(board, p.marketTitle), p.side).won,
+    won: marketWon(p.marketId, p.side, gameStats),
   }));
   const r = settleParlay(legs, bet.stake);
   return { won: r.allWon, payout: r.payout, combinedOdds: r.combinedOdds };
