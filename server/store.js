@@ -95,4 +95,18 @@ async function settleBets(matchId, gameStats) {
   }
 }
 
-module.exports = { getBalance, placeBet, settleBets };
+async function listBets(username) {
+  try {
+    const res = await db.query(
+      `SELECT match_id, bet, stake, status, payout, created_at
+       FROM bets WHERE username = $1 ORDER BY created_at DESC LIMIT 50`,
+      [username]
+    );
+    return res.rows;
+  } catch (err) {
+    if (!isDisabled(err)) console.error('[store] listBets:', err.message);
+    return [];
+  }
+}
+
+module.exports = { getBalance, placeBet, settleBets, listBets };
