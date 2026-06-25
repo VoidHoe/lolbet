@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>Serveur lolbet</title>
+<style>
+  body { font-family:system-ui,sans-serif; background:#0e1015; color:#e7e9ee; padding:18px; margin:0; }
+  label { font-size:13px; color:#8a90a2; }
+  input { width:100%; margin-top:6px; padding:9px 11px; border-radius:8px; border:1px solid #2b2f3c; background:#11141c; color:#e7e9ee; font:inherit; box-sizing:border-box; }
+  button { margin-top:14px; padding:9px 16px; border:0; border-radius:8px; background:#f0b132; color:#1a1205; font-weight:700; cursor:pointer; }
+  .hint { margin-top:10px; font-size:12px; color:#8a90a2; }
+</style>
+</head>
+<body>
+  <label for="u">URL du serveur lolbet</label>
+  <input id="u" placeholder="https://lolbet-xxxx.up.railway.app" />
+  <button onclick="save()">Enregistrer & connecter</button>
+  <div class="hint">Local : <code>http://localhost:3000</code> · Partagé : ton URL Railway.</div>
+<script>
+  async function load() { document.getElementById('u').value = await window.lolbet.getServerUrl(); }
+  async function save() { await window.lolbet.setServerUrl(document.getElementById('u').value.trim()); }
+  load();
+</script>
+</body>
+</html>

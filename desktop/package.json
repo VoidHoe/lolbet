@@ -1,0 +1,45 @@
+{
+  "name": "lolbet-desktop",
+  "version": "0.1.0",
+  "description": "lolbet desktop client — bet on your friends' ranked LoL games",
+  "author": "VoidHoe",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win --x64"
+  },
+  "dependencies": {
+    "electron-store": "^8.1.0"
+  },
+  "devDependencies": {
+    "electron": "28.2.0",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.lolbet.desktop",
+    "productName": "lolbet",
+    "electronVersion": "28.2.0",
+    "directories": { "output": "dist" },
+    "files": [
+      "main.js",
+      "settings.html",
+      "settings-preload.js",
+      "node_modules/**/*"
+    ],
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }]
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "shortcutName": "lolbet",
+      "runAfterFinish": true
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "VoidHoe",
+      "repo": "lolbet",
+      "releaseType": "release"
+    }
+  }
+}
