@@ -65,6 +65,19 @@ async function init() {
       region     TEXT NOT NULL DEFAULT 'euw',
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )`);
+  await query(`
+    CREATE TABLE IF NOT EXISTS events (
+      match_id   TEXT PRIMARY KEY,
+      username   TEXT NOT NULL,
+      riot_id    TEXT NOT NULL,
+      puuid      TEXT NOT NULL,
+      champion   TEXT NOT NULL,
+      queue_id   INTEGER NOT NULL,
+      status     TEXT NOT NULL DEFAULT 'open',
+      board      JSONB NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      settled_at TIMESTAMPTZ
+    )`);
   return true;
 }
 
