@@ -12,6 +12,7 @@ const { getLiveGame, summarize } = require('./liveClient');
 const { getBalance, placeBet, settleBets } = require('../server/store');
 const { makeSingle } = require('../server/bets');
 const db = require('../server/db');
+const accounts = require('../server/accounts');
 
 const STAKE = 50;
 const FORM_WINDOW = 12;    // recent games fetched to find ~5 of the right mode
@@ -161,10 +162,31 @@ async function demoBet(riotId, matchId) {
   console.log(`   réglé (${settled} pari) → solde ${after} (${after - before >= 0 ? '+' : ''}${after - before})`);
 }
 
+async function register() {
+  await db.init();
+  const [username, password] = process.argv.slice(3);
+  if (!username || !password) { console.log('usage: register <username> <password>'); return; }
+  const r = await accounts.register(username, password);
+  console.log(r.ok ? `✅ compte créé: ${username}` : `❌ échec (${r.error})`);
+}
+
+async function link() {
+  await db.init();
+  const [username, riotId] = process.argv.slice(3);
+  if (!username || !riotId) { console.log('usage: link <username> <RiotID (Pseudo#TAG)>'); return; }
+  const puuid = await getPuuid(riotId); // trust-based: just resolves, no OAuth
+  const r = await accounts.linkRiot(username, riotId, puuid);
+  console.log(r.ok ? `✅ ${riotId} lié à ${username}` : `❌ échec (${r.error})`);
+  const list = await accounts.listRiot(username);
+  console.log(`   comptes Riot de ${username}: ${list.map((a) => a.riot_id).join(', ') || 'aucun'}`);
+}
+
 async function main() {
   const [mode = 'backtest', riotId = 'GraveDigger#v0id', matchId] = process.argv.slice(2);
   try {
-    if (mode === 'demo-bet') await demoBet(riotId, matchId);
+    if (mode === 'register') await register();
+    else if (mode === 'link') await link();
+    else if (mode === 'demo-bet') await demoBet(riotId, matchId);
     else if (mode === 'live') await live();
     else if (mode === 'watch') await watch(riotId);
     else await backtest(riotId, matchId);
