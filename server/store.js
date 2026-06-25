@@ -4,7 +4,8 @@
 
 const db = require('./db');
 const { START_BALANCE, canBet } = require('./economy');
-const { settleSingle, settleParlayBet } = require('./bets');
+const { extractStats } = require('../src/markets');
+const { settleBet } = require('./bets');
 
 function isDisabled(err) { return err instanceof db.EconomyDisabledError; }
 
@@ -58,31 +59,36 @@ async function placeBet(username, matchId, bet) {
   }
 }
 
-// Settle all open bets for a finished match against its board.
-async function settleBets(matchId, gameStats) {
+// Settle all open bets for a finished event. event = {match_id, board, puuid};
+// match = raw match-v5 object. Resolves each bet via board metadata + per-puuid stats.
+async function settleBets(event, match) {
   try {
+    const board = event.board || [];
+    const puuids = new Set(board.map((m) => m.puuid).filter(Boolean));
+    if (event.puuid) puuids.add(event.puuid);
+    const statsByPuuid = {};
+    for (const pu of puuids) {
+      try { statsByPuuid[pu] = extractStats(match, pu); } catch { /* not in match */ }
+    }
+
     const open = await db.query(
       `SELECT id, username, bet FROM bets WHERE match_id = $1 AND status = 'open'`,
-      [matchId]
+      [event.match_id]
     );
     let settled = 0;
     for (const row of open.rows) {
       const bet = typeof row.bet === 'string' ? JSON.parse(row.bet) : row.bet;
-      const result = bet.type === 'parlay' ? settleParlayBet(bet, gameStats) : settleSingle(bet, gameStats);
+      let result;
+      try { result = settleBet(bet, board, statsByPuuid, event.puuid); }
+      catch (e) { console.error('[store] settleBet:', e.message); continue; }
       await db.query('BEGIN');
-      await db.query(
-        `UPDATE bets SET status = $2, payout = $3 WHERE id = $1`,
-        [row.id, result.won ? 'won' : 'lost', result.payout]
-      );
+      await db.query(`UPDATE bets SET status = $2, payout = $3 WHERE id = $1`,
+        [row.id, result.won ? 'won' : 'lost', result.payout]);
       if (result.payout > 0) {
-        await db.query(
-          `UPDATE players SET balance = balance + $2, updated_at = now() WHERE username = $1`,
-          [row.username, result.payout]
-        );
-        await db.query(
-          `INSERT INTO ledger (username, delta, reason, ref) VALUES ($1, $2, 'bet-payout', $3)`,
-          [row.username, result.payout, matchId]
-        );
+        await db.query(`UPDATE players SET balance = balance + $2, updated_at = now() WHERE username = $1`,
+          [row.username, result.payout]);
+        await db.query(`INSERT INTO ledger (username, delta, reason, ref) VALUES ($1, $2, 'bet-payout', $3)`,
+          [row.username, result.payout, event.match_id]);
       }
       await db.query('COMMIT');
       settled += 1;
