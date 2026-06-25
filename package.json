@@ -2,10 +2,15 @@
   "name": "lolbet-proto",
   "version": "0.0.1",
   "private": true,
-  "description": "De-risk prototype: auto-settle bets from real LoL games via the Riot API.",
+  "description": "De-risk prototype + betting engine: auto-settle bets from real LoL games via the Riot API.",
   "engines": { "node": ">=20.0.0" },
   "scripts": {
     "backtest": "node src/index.js backtest",
-    "watch": "node src/index.js watch"
-  }
+    "watch": "node src/index.js watch",
+    "live": "node src/index.js live",
+    "demo-bet": "node src/index.js demo-bet",
+    "test": "jest"
+  },
+  "dependencies": { "pg": "^8.11.3" },
+  "devDependencies": { "jest": "^29.7.0" }
 }
