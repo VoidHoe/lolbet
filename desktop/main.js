@@ -14,9 +14,20 @@ const DEFAULT_URL = 'https://lolbet-production.up.railway.app';
 let win;
 let settingsWin;
 
+// Accept a bare domain ("host.app") and turn it into a loadable URL. loadURL
+// rejects anything without a scheme with ERR_INVALID_URL, so we always add one.
+function normalizeUrl(u) {
+  u = String(u || '').trim();
+  if (!u) return DEFAULT_URL;
+  return /^https?:\/\//i.test(u) ? u : `https://${u}`;
+}
+
 function loadServer() {
-  const url = store.get('serverUrl', DEFAULT_URL);
-  win.loadURL(url).catch(() => win.loadFile(path.join(__dirname, 'settings.html')));
+  const url = normalizeUrl(store.get('serverUrl', DEFAULT_URL));
+  // NOTE: do NOT .catch() loadURL — it rejects with ERR_ABORTED (-3) on benign
+  // redirects/superseded loads even when the page loads fine. Real failures are
+  // handled by the did-fail-load listener below.
+  win.loadURL(url);
 }
 
 function buildMenu() {
@@ -47,6 +58,16 @@ function createWindow() {
     webPreferences: { contextIsolation: true },
   });
   Menu.setApplicationMenu(buildMenu());
+
+  // Only fall back to settings on a REAL main-frame load failure. ERR_ABORTED
+  // (-3) fires spuriously on redirects/superseded loads — ignore it.
+  win.webContents.on('did-fail-load', (_e, errorCode, errorDesc, validatedURL, isMainFrame) => {
+    if (isMainFrame && errorCode !== -3) {
+      console.error('[load] échec', errorCode, errorDesc, validatedURL);
+      win.loadFile(path.join(__dirname, 'settings.html'));
+    }
+  });
+
   loadServer();
 }
 
@@ -67,7 +88,7 @@ function openSettings() {
 
 ipcMain.handle('getServerUrl', () => store.get('serverUrl', DEFAULT_URL));
 ipcMain.handle('setServerUrl', (_e, url) => {
-  if (url) store.set('serverUrl', url);
+  store.set('serverUrl', normalizeUrl(url));
   if (settingsWin) settingsWin.close();
   loadServer();
 });

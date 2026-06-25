@@ -1,6 +1,6 @@
 {
   "name": "lolbet-desktop",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "lolbet desktop client — bet on your friends' ranked LoL games",
   "author": "VoidHoe",
   "main": "main.js",
