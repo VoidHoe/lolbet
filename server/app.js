@@ -7,7 +7,7 @@ const accounts = require('./accounts');
 const store = require('./store');
 const events = require('./events');
 const session = require('./session');
-const { makeSingle } = require('./bets');
+const { makeSingle, makeParlay } = require('./bets');
 const { getPuuid } = require('../src/riot');
 
 const app = express();
@@ -63,13 +63,24 @@ app.get('/api/events', async (_req, res) => {
   res.json(await events.listOpen());
 });
 
+// Place a bet. `picks` is an array of {marketId, side}: 1 pick = single, more =
+// combiné/parlay. (Legacy single fields {marketId, side} are still accepted.)
 app.post('/api/bet', requireAuth, async (req, res) => {
-  const { matchId, marketId, side, stake } = req.body || {};
+  const { matchId, stake } = req.body || {};
+  let picks = req.body && req.body.picks;
+  if (!Array.isArray(picks) || picks.length === 0) {
+    const { marketId, side } = req.body || {};
+    if (marketId && side) picks = [{ marketId, side }];
+    else return res.json({ ok: false, error: 'no-picks' });
+  }
   const ev = await events.getEvent(matchId);
   if (!ev) return res.json({ ok: false, error: 'no-event' });
   let bet;
-  try { bet = makeSingle({ player: req.username, board: ev.board, marketId, side, stake: Number(stake) }); }
-  catch (e) { return res.json({ ok: false, error: 'bad-bet' }); }
+  try {
+    bet = picks.length === 1
+      ? makeSingle({ player: req.username, board: ev.board, marketId: picks[0].marketId, side: picks[0].side, stake: Number(stake) })
+      : makeParlay({ player: req.username, board: ev.board, picks, stake: Number(stake) });
+  } catch (e) { return res.json({ ok: false, error: 'bad-bet' }); }
   res.json(await store.placeBet(req.username, matchId, bet));
 });
 

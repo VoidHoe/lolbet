@@ -20,7 +20,9 @@
   .ev h3 { margin:0 0 8px; font-size:15px; }
   .mkt { display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-top:1px solid #20242f; }
   .mkt .sides { display:flex; gap:6px; }
-  .odd { background:#222633; border:0; color:var(--ink); padding:6px 9px; border-radius:7px; cursor:pointer; font-weight:600; }
+  .odd { background:#222633; border:1px solid transparent; color:var(--ink); padding:6px 9px; border-radius:7px; cursor:pointer; font-weight:600; }
+  .odd:hover { background:#2c3142; }
+  .odd.sel { background:#3a2f12; border-color:var(--acc); }
   .odd b { color:var(--acc); }
   .muted { color:var(--mut); font-size:13px; }
   .bet { display:flex; justify-content:space-between; padding:6px 0; border-top:1px solid #20242f; font-size:14px; }
@@ -55,6 +57,17 @@
       <div id="events" class="muted">Aucun event ouvert. Lance une ranked (avec le poller actif) 👀</div>
     </div>
 
+    <div class="card" id="slipCard" style="display:none">
+      <h2>Coupon</h2>
+      <div id="slip"></div>
+      <div class="row" style="margin-top:10px">
+        <input id="stake" type="number" min="1" value="50" style="width:90px" oninput="renderSlip()" />
+        <button onclick="placeSlip()">Parier</button>
+        <button class="ghost" onclick="clearSlip()">Vider</button>
+      </div>
+      <div id="slipInfo" class="muted" style="margin-top:8px"></div>
+    </div>
+
     <div class="card">
       <h2>Mes paris</h2>
       <div id="bets" class="muted">—</div>
@@ -67,6 +80,8 @@ const $ = (id) => document.getElementById(id);
 const api = (p, opt) => fetch('/api' + p, Object.assign({ headers: { 'Content-Type': 'application/json' } }, opt)).then((r) => r.json());
 
 let poll = null;
+let slip = [];        // current coupon: [{matchId, marketId, side}]
+const boards = {};    // matchId → priced board (for odds/labels)
 function setBal(me) { $('who').innerHTML = me.username + ' · <span class="bal">' + me.balance + ' Clout</span>'; }
 
 async function refresh() {
@@ -110,19 +125,66 @@ async function renderEvents() {
   const evs = await api('/events');
   if (!evs.length) { $('events').textContent = 'Aucun event ouvert.'; return; }
   $('events').innerHTML = evs.map((ev) => {
+    boards[ev.match_id] = ev.board || [];
     const mkts = (ev.board || []).map((m) =>
       '<div class="mkt"><span>' + m.title + '</span><span class="sides">' +
-      '<button class="odd" onclick="bet(\'' + ev.match_id + '\',\'' + m.id + '\',\'yes\')">' + m.yes.label + ' <b>' + m.yes.odds.toFixed(2) + '</b></button>' +
-      '<button class="odd" onclick="bet(\'' + ev.match_id + '\',\'' + m.id + '\',\'no\')">' + m.no.label + ' <b>' + m.no.odds.toFixed(2) + '</b></button>' +
+      '<button class="odd" id="o_' + ev.match_id + '_' + m.id + '_yes" onclick="pick(\'' + ev.match_id + '\',\'' + m.id + '\',\'yes\')">' + m.yes.label + ' <b>' + m.yes.odds.toFixed(2) + '</b></button>' +
+      '<button class="odd" id="o_' + ev.match_id + '_' + m.id + '_no" onclick="pick(\'' + ev.match_id + '\',\'' + m.id + '\',\'no\')">' + m.no.label + ' <b>' + m.no.odds.toFixed(2) + '</b></button>' +
       '</span></div>').join('');
     return '<div class="ev"><h3>🎮 ' + ev.champion + ' <span class="muted">(' + ev.riot_id + ')</span></h3>' + mkts + '</div>';
   }).join('');
+  markSelected();
+  renderSlip();
 }
-async function bet(matchId, marketId, side) {
-  const stake = Number(prompt('Mise (Clout) ?', '50'));
-  if (!stake) return;
-  const r = await api('/bet', { method:'POST', body: JSON.stringify({ matchId, marketId, side, stake }) });
-  if (r.ok) refresh(); else alert('Pari refusé: ' + r.error);
+
+// ---- Bet slip / coupon (1 pick = simple, plusieurs = combiné) ----
+function selOf(matchId, marketId, side) {
+  const m = (boards[matchId] || []).find((x) => x.id === marketId);
+  return m ? m[side] : null;
+}
+function pick(matchId, marketId, side) {
+  if (slip.length && slip[0].matchId !== matchId) slip = []; // un seul event à la fois
+  const i = slip.findIndex((p) => p.marketId === marketId);
+  if (i >= 0) {
+    if (slip[i].side === side) slip.splice(i, 1); // re-clic = retire
+    else slip[i].side = side;                     // autre côté = bascule
+  } else {
+    slip.push({ matchId, marketId, side });
+  }
+  renderSlip(); markSelected();
+}
+function markSelected() {
+  document.querySelectorAll('.odd').forEach((b) => b.classList.remove('sel'));
+  for (const p of slip) {
+    const el = document.getElementById('o_' + p.matchId + '_' + p.marketId + '_' + p.side);
+    if (el) el.classList.add('sel');
+  }
+}
+function renderSlip() {
+  const card = $('slipCard');
+  if (!slip.length) { card.style.display = 'none'; return; }
+  card.style.display = '';
+  let combined = 1;
+  $('slip').innerHTML = slip.map((p) => {
+    const m = (boards[p.matchId] || []).find((x) => x.id === p.marketId);
+    const s = selOf(p.matchId, p.marketId, p.side);
+    combined *= s.odds;
+    return '<div class="bet"><span>' + (m ? m.title : p.marketId) + ' · ' + s.label + '</span><span>@' + s.odds.toFixed(2) +
+      ' <button class="ghost" style="padding:2px 7px" onclick="pick(\'' + p.matchId + '\',\'' + p.marketId + '\',\'' + p.side + '\')">✕</button></span></div>';
+  }).join('');
+  const stake = Number($('stake').value) || 0;
+  const kind = slip.length > 1 ? 'Combiné ×' + combined.toFixed(2) : 'Simple @' + combined.toFixed(2);
+  $('slipInfo').textContent = kind + ' — gain potentiel : ' + Math.round(stake * combined) + ' Clout';
+}
+function clearSlip() { slip = []; renderSlip(); markSelected(); }
+async function placeSlip() {
+  if (!slip.length) return;
+  const stake = Number($('stake').value);
+  const r = await api('/bet', { method:'POST', body: JSON.stringify({
+    matchId: slip[0].matchId, stake, picks: slip.map((p) => ({ marketId: p.marketId, side: p.side })),
+  }) });
+  if (r.ok) { clearSlip(); refresh(); }
+  else { $('slipInfo').textContent = 'Pari refusé: ' + r.error; }
 }
 async function renderBets() {
   const bs = await api('/bets');
