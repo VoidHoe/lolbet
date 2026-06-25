@@ -34,9 +34,13 @@ async function placeBet(username, matchId, bet) {
     await db.query('BEGIN');
     const upd = await db.query(
       `UPDATE players SET balance = balance - $2, updated_at = now()
-       WHERE username = $1 RETURNING balance`,
+       WHERE username = $1 AND balance >= $2 RETURNING balance`,
       [username, bet.stake]
     );
+    if (upd.rowCount === 0) {
+      await db.query('ROLLBACK');
+      return { ok: false, balance: null, error: 'insufficient' };
+    }
     await db.query(
       `INSERT INTO bets (username, match_id, bet, stake) VALUES ($1, $2, $3::jsonb, $4)`,
       [username, matchId, JSON.stringify(bet), bet.stake]
