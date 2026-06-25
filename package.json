@@ -9,6 +9,7 @@
     "watch": "node src/index.js watch",
     "live": "node src/index.js live",
     "demo-bet": "node src/index.js demo-bet",
+    "serve": "node server/index.js",
     "test": "jest"
   },
   "dependencies": { "pg": "^8.11.3", "express": "^4.19.2" },
