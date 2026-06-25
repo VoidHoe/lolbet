@@ -66,12 +66,28 @@
 const $ = (id) => document.getElementById(id);
 const api = (p, opt) => fetch('/api' + p, Object.assign({ headers: { 'Content-Type': 'application/json' } }, opt)).then((r) => r.json());
 
+let poll = null;
+function setBal(me) { $('who').innerHTML = me.username + ' · <span class="bal">' + me.balance + ' Clout</span>'; }
+
 async function refresh() {
   const me = await api('/me').catch(() => null);
-  if (!me || !me.username) { $('authCard').classList.remove('hide'); $('app').classList.add('hide'); $('who').textContent = ''; return; }
+  if (!me || !me.username) {
+    $('authCard').classList.remove('hide'); $('app').classList.add('hide'); $('who').textContent = '';
+    if (poll) { clearInterval(poll); poll = null; }
+    return;
+  }
   $('authCard').classList.add('hide'); $('app').classList.remove('hide');
-  $('who').innerHTML = me.username + ' · <span class="bal">' + me.balance + ' Clout</span>';
+  setBal(me);
   renderAccounts(); renderEvents(); renderBets();
+  // Auto-refresh: a betting event opens ~30s after a game starts, so poll for it.
+  if (!poll) poll = setInterval(tick, 12000);
+}
+
+async function tick() {
+  const me = await api('/me').catch(() => null);
+  if (!me || !me.username) { if (poll) { clearInterval(poll); poll = null; } return; }
+  setBal(me);
+  renderEvents(); renderBets();
 }
 async function register() {
   const r = await api('/register', { method:'POST', body: JSON.stringify({ username:$('u').value, password:$('p').value }) });
