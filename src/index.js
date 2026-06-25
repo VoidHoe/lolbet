@@ -9,6 +9,9 @@ const { getPuuid, getRecentMatchIds, getMatch } = require('./riot');
 const { extractStats, buildBoard, settleParlay } = require('./markets');
 const { getRecentStats } = require('./form');
 const { getLiveGame, summarize } = require('./liveClient');
+const { getBalance, placeBet, settleBets } = require('../server/store');
+const { makeSingle } = require('../server/bets');
+const db = require('../server/db');
 
 const STAKE = 50;
 const FORM_WINDOW = 12;    // recent games fetched to find ~5 of the right mode
@@ -133,10 +136,36 @@ async function live() {
   }, 5000);
 }
 
+async function demoBet(riotId, matchId) {
+  await db.init(); // no-op if DATABASE_URL unset
+  const puuid = await getPuuid(riotId);
+  const id = matchId || (await getRecentMatchIds(puuid, 1, { type: 'ranked' }))[0];
+  if (!id) { console.log('Aucune game ranked trouvée.'); return; }
+
+  const gameStats = extractStats(await getMatch(id), puuid);
+  const history = await getRecentStats(puuid, 12, id);
+  const board = buildBoard(history, gameStats);
+
+  const user = 'demo';
+  const before = await getBalance(user);
+  // Bet 50 on the player's WIN at the frozen opening odds.
+  const winMarket = board.find((m) => m.title.startsWith('Résultat'));
+  const bet = makeSingle({ player: user, board, marketTitle: winMarket.title, side: 'yes', stake: 50 });
+
+  const placed = await placeBet(user, id, bet);
+  console.log(`\n💰 ${user}: solde ${before} → pari 50 @${bet.odds.toFixed(2)} sur ${winMarket.title} WIN`);
+  if (!placed.ok) { console.log(`   ❌ pari refusé (${placed.error}). DB branchée ? (DATABASE_URL)`); return; }
+
+  const { settled } = await settleBets(id, board);
+  const after = await getBalance(user);
+  console.log(`   réglé (${settled} pari) → solde ${after} (${after - before >= 0 ? '+' : ''}${after - before})`);
+}
+
 async function main() {
   const [mode = 'backtest', riotId = 'GraveDigger#v0id', matchId] = process.argv.slice(2);
   try {
-    if (mode === 'live') await live();
+    if (mode === 'demo-bet') await demoBet(riotId, matchId);
+    else if (mode === 'live') await live();
     else if (mode === 'watch') await watch(riotId);
     else await backtest(riotId, matchId);
   } catch (e) {
