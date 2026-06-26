@@ -260,6 +260,8 @@ function markSelected() {
 function renderSlip() {
   const bar = $('slip');
   if (!slip.length) { bar.classList.add('hide'); return; }
+  slip = slip.filter((p) => selOf(p.matchId, p.marketId, p.side));
+  if (!slip.length) { bar.classList.add('hide'); return; }
   bar.classList.remove('hide');
   let combined = 1;
   $('slipLegs').innerHTML = slip.map((p) => {
