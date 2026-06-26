@@ -1,4 +1,4 @@
-const { priceBoard, marketWon, buildBoard } = require('../../src/markets');
+const { priceBoard, marketWon, buildBoard, MARKET_DEFS, priceMultiBoard } = require('../../src/markets');
 
 const history = Array.from({ length: 5 }, () => ({
   gameMode: 'CLASSIC', win: true, kills: 10, deaths: 2, assists: 5, cs: 200,
@@ -39,4 +39,21 @@ test('buildBoard still works and now carries ids', () => {
   const board = buildBoard(history, gameStats);
   const win = board.find((m) => m.id === 'win');
   expect(win.no.won).toBe(true);
+});
+
+test('every market def has a valid category', () => {
+  const valid = new Set(['result', 'combat', 'objectives', 'farm']);
+  for (const def of MARKET_DEFS) {
+    expect(valid.has(def.cat)).toBe(true);
+  }
+});
+
+test('priceMultiBoard items carry slot, defId and cat', () => {
+  const players = [{ slot: 'p0', puuid: 'x', name: 'Ahri', history }];
+  const board = priceMultiBoard(players, 'CLASSIC');
+  const kills = board.find((m) => m.defId === 'kills');
+  expect(kills.slot).toBe('p0');
+  expect(kills.cat).toBe('combat');
+  const win = board.find((m) => m.defId === 'win');
+  expect(win.cat).toBe('result');
 });

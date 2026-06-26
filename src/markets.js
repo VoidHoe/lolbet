@@ -50,22 +50,22 @@ function extractStats(match, puuid) {
 // Market catalogue. kind:'binary' (test→bool = YES side) or 'ou' (value→number vs line).
 // mode:'all' = every game mode; 'classic' = Summoner's Rift only.
 const MARKET_DEFS = [
-  { id: 'win',    title: (s) => `Résultat (${s.champion})`, kind: 'binary', yes: 'WIN', no: 'LOSE', mode: 'all', test: (s) => s.win },
-  { id: 'kills',  title: () => 'Kills',   kind: 'ou', line: LINES.kills,   mode: 'all', value: (s) => s.kills },
-  { id: 'deaths', title: () => 'Deaths',  kind: 'ou', line: LINES.deaths,  mode: 'all', value: (s) => s.deaths },
-  { id: 'assists',title: () => 'Assists', kind: 'ou', line: LINES.assists, mode: 'all', value: (s) => s.assists },
-  { id: 'fbself', title: () => 'Fait le First Blood', kind: 'binary', yes: 'OUI', no: 'NON', mode: 'all', test: (s) => s.firstBloodKill },
-  { id: 'mk2',    title: () => 'Multi-kill (double+)', kind: 'binary', yes: 'OUI', no: 'NON', mode: 'all', test: (s) => s.largestMultiKill >= 2 },
-  { id: 'mk3',    title: () => 'Triple kill+',         kind: 'binary', yes: 'OUI', no: 'NON', mode: 'all', test: (s) => s.largestMultiKill >= 3 },
+  { id: 'win',    cat: 'result',     title: (s) => `Résultat (${s.champion})`, kind: 'binary', yes: 'WIN', no: 'LOSE', mode: 'all', test: (s) => s.win },
+  { id: 'kills',  cat: 'combat',     title: () => 'Kills',   kind: 'ou', line: LINES.kills,   mode: 'all', value: (s) => s.kills },
+  { id: 'deaths', cat: 'combat',     title: () => 'Deaths',  kind: 'ou', line: LINES.deaths,  mode: 'all', value: (s) => s.deaths },
+  { id: 'assists',cat: 'combat',     title: () => 'Assists', kind: 'ou', line: LINES.assists, mode: 'all', value: (s) => s.assists },
+  { id: 'fbself', cat: 'combat',     title: () => 'Fait le First Blood', kind: 'binary', yes: 'OUI', no: 'NON', mode: 'all', test: (s) => s.firstBloodKill },
+  { id: 'mk2',    cat: 'combat',     title: () => 'Multi-kill (double+)', kind: 'binary', yes: 'OUI', no: 'NON', mode: 'all', test: (s) => s.largestMultiKill >= 2 },
+  { id: 'mk3',    cat: 'combat',     title: () => 'Triple kill+',         kind: 'binary', yes: 'OUI', no: 'NON', mode: 'all', test: (s) => s.largestMultiKill >= 3 },
   // Summoner's Rift only
-  { id: 'cs',     title: () => 'CS (farm)',           kind: 'ou', line: LINES.cs,        mode: 'classic', value: (s) => s.cs },
-  { id: 'gkills', title: () => 'Kills totaux (game)', kind: 'ou', line: LINES.totalKills, mode: 'classic', value: (s) => s.totalKills },
-  { id: 'drakes', title: () => 'Dragons (équipe)',    kind: 'ou', line: LINES.dragons,   mode: 'classic', value: (s) => s.teamDragons },
-  { id: 'dur',    title: () => 'Durée (min)',         kind: 'ou', line: LINES.durMin,     mode: 'classic', value: (s) => Math.floor(s.durationSec / 60) },
-  { id: 'fbteam', title: () => 'First Blood',     kind: 'binary', yes: 'son équipe', no: 'adverse', mode: 'classic', test: (s) => s.fbMine },
-  { id: 'fdteam', title: () => 'Premier Dragon',  kind: 'binary', yes: 'son équipe', no: 'adverse', mode: 'classic', test: (s) => s.fdMine },
-  { id: 'fbaron', title: () => 'Premier Baron',   kind: 'binary', yes: 'son équipe', no: 'adverse', mode: 'classic', test: (s) => s.fbaronMine },
-  { id: 'ftower', title: () => 'Première Tour',   kind: 'binary', yes: 'son équipe', no: 'adverse', mode: 'classic', test: (s) => s.ftowerMine },
+  { id: 'cs',     cat: 'farm',       title: () => 'CS (farm)',           kind: 'ou', line: LINES.cs,        mode: 'classic', value: (s) => s.cs },
+  { id: 'gkills', cat: 'combat',     title: () => 'Kills totaux (game)', kind: 'ou', line: LINES.totalKills, mode: 'classic', value: (s) => s.totalKills },
+  { id: 'drakes', cat: 'objectives', title: () => 'Dragons (équipe)',    kind: 'ou', line: LINES.dragons,   mode: 'classic', value: (s) => s.teamDragons },
+  { id: 'dur',    cat: 'farm',       title: () => 'Durée (min)',         kind: 'ou', line: LINES.durMin,     mode: 'classic', value: (s) => Math.floor(s.durationSec / 60) },
+  { id: 'fbteam', cat: 'objectives', title: () => 'First Blood',     kind: 'binary', yes: 'son équipe', no: 'adverse', mode: 'classic', test: (s) => s.fbMine },
+  { id: 'fdteam', cat: 'objectives', title: () => 'Premier Dragon',  kind: 'binary', yes: 'son équipe', no: 'adverse', mode: 'classic', test: (s) => s.fdMine },
+  { id: 'fbaron', cat: 'objectives', title: () => 'Premier Baron',   kind: 'binary', yes: 'son équipe', no: 'adverse', mode: 'classic', test: (s) => s.fbaronMine },
+  { id: 'ftower', cat: 'objectives', title: () => 'Première Tour',   kind: 'binary', yes: 'son équipe', no: 'adverse', mode: 'classic', test: (s) => s.ftowerMine },
 ];
 
 const clampOdds = (o) => Math.max(ODDS_MIN, Math.min(ODDS_MAX, o));
@@ -101,6 +101,8 @@ function buildBoard(history, gameStats) {
       const noLabel = def.kind === 'ou' ? `- de ${def.line}` : def.no;
       return {
         id: def.id,
+        defId: def.id,
+        cat: def.cat,
         title: def.title(gameStats),
         sample: price.n,
         hits: price.hits,
@@ -135,6 +137,8 @@ function priceBoard(history, meta) {
       const lab = labelsFor(def);
       return {
         id: def.id,
+        defId: def.id,
+        cat: def.cat,
         title: def.title({ champion: meta.champion }),
         yes: { label: lab.yes, odds: price.oddsYes },
         no: { label: lab.no, odds: price.oddsNo },
@@ -158,7 +162,7 @@ function priceMultiBoard(players, gameMode) {
       const lab = labelsFor(def);
       board.push({
         id: p.slot + ':' + def.id,
-        kind: 'player', slot: p.slot, puuid: p.puuid, name: p.name, defId: def.id,
+        kind: 'player', slot: p.slot, puuid: p.puuid, name: p.name, defId: def.id, cat: def.cat,
         title: p.name + ' · ' + baseTitle(def),
         yes: { label: lab.yes, odds: price.oddsYes },
         no: { label: lab.no, odds: price.oddsNo },
