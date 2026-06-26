@@ -25,6 +25,19 @@ function extractStats(match, puuid) {
   const o = myTeam.objectives || {};
   const e = enemyTeam.objectives || {};
 
+  const myCs = (me.totalMinionsKilled ?? 0) + (me.neutralMinionsKilled ?? 0);
+  const myPos = me.teamPosition || me.individualPosition || '';
+  let outFarmedOpponent = null;
+  if (myPos) {
+    const opp = (info.participants || []).find(
+      (p) => p.teamId !== me.teamId && (p.teamPosition || p.individualPosition) === myPos
+    );
+    if (opp) {
+      const oppCs = (opp.totalMinionsKilled ?? 0) + (opp.neutralMinionsKilled ?? 0);
+      outFarmedOpponent = myCs > oppCs;
+    }
+  }
+
   return {
     matchId: match.metadata.matchId,
     queueId: info.queueId,
@@ -34,7 +47,8 @@ function extractStats(match, puuid) {
     kills: me.kills,
     deaths: me.deaths,
     assists: me.assists,
-    cs: (me.totalMinionsKilled ?? 0) + (me.neutralMinionsKilled ?? 0),
+    cs: myCs,
+    outFarmedOpponent,
     firstBloodKill: !!me.firstBloodKill,
     largestMultiKill: me.largestMultiKill ?? 0,
     fbMine: !!(o.champion && o.champion.first),
@@ -59,6 +73,7 @@ const MARKET_DEFS = [
   { id: 'mk3',    cat: 'combat',     title: () => 'Triple kill+',         kind: 'binary', yes: 'OUI', no: 'NON', mode: 'all', test: (s) => s.largestMultiKill >= 3 },
   // Summoner's Rift only
   { id: 'cs',     cat: 'farm',       title: () => 'CS (farm)',           kind: 'ou', line: LINES.cs,        mode: 'classic', value: (s) => s.cs },
+  { id: 'csvs', cat: 'farm', title: () => "Plus de CS que l'adversaire direct", kind: 'binary', yes: 'OUI', no: 'NON', mode: 'classic', sample: (s) => s.outFarmedOpponent !== null, test: (s) => s.outFarmedOpponent === true },
   { id: 'gkills', cat: 'combat',     title: () => 'Kills totaux (game)', kind: 'ou', line: LINES.totalKills, mode: 'classic', value: (s) => s.totalKills },
   { id: 'drakes', cat: 'objectives', title: () => 'Dragons (équipe)',    kind: 'ou', line: LINES.dragons,   mode: 'classic', value: (s) => s.teamDragons },
   { id: 'dur',    cat: 'farm',       title: () => 'Durée (min)',         kind: 'ou', line: LINES.durMin,     mode: 'classic', value: (s) => Math.floor(s.durationSec / 60) },
@@ -74,10 +89,11 @@ const priceFromProb = (p) => clampOdds((1 / p) * (1 - VIG));
 
 // Price one market from recent form (array of stats, already same-mode).
 function priceMarket(def, history) {
-  const n = history.length;
+  const usable = def.sample ? history.filter(def.sample) : history;
+  const n = usable.length;
   const hits = def.kind === 'binary'
-    ? history.filter(def.test).length
-    : history.filter((s) => def.value(s) > def.line).length;
+    ? usable.filter(def.test).length
+    : usable.filter((s) => def.value(s) > def.line).length;
   const pYes = n > 0 ? smoothedProb(hits, n) : 0.5;
   return { n, hits, pYes, oddsYes: priceFromProb(pYes), oddsNo: priceFromProb(1 - pYes) };
 }
