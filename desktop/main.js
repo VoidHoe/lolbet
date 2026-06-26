@@ -2,9 +2,10 @@
 // the shared lolbet server. The server URL is configurable (Serveur… menu) and
 // persisted via electron-store; defaults to a local dev server.
 
-const { app, BrowserWindow, Menu, ipcMain } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, dialog } = require('electron');
 const path = require('path');
 const Store = require('electron-store');
+const { autoUpdater } = require('electron-updater');
 
 const store = new Store();
 // Shared backend baked in so a fresh install just works (zero config). The
@@ -37,6 +38,7 @@ function buildMenu() {
       submenu: [
         { label: 'Serveur…', accelerator: 'CmdOrCtrl+,', click: openSettings },
         { label: 'Recharger', accelerator: 'CmdOrCtrl+R', click: () => loadServer() },
+        { label: 'Vérifier les mises à jour', click: () => checkForUpdates(true) },
         { type: 'separator' },
         { role: 'quit', label: 'Quitter' },
       ],
@@ -86,6 +88,29 @@ function openSettings() {
   settingsWin.loadFile(path.join(__dirname, 'settings.html'));
 }
 
+// --- Auto-update (electron-updater → GitHub Releases) ---
+// On launch we silently check + download any newer published release and install
+// it on quit. The menu item calls this with notify=true to surface "you're up to
+// date" / errors when the user asks manually.
+function checkForUpdates(notify = false) {
+  autoUpdater.checkForUpdatesAndNotify().catch((err) => {
+    console.error('[update] échec', err && err.message);
+    if (notify) dialog.showMessageBox(win, { type: 'error', message: 'Mise à jour', detail: 'Impossible de vérifier les mises à jour.' });
+  });
+  if (notify) {
+    autoUpdater.once('update-not-available', () => {
+      dialog.showMessageBox(win, { type: 'info', message: 'Mise à jour', detail: 'lolbet est à jour ✅' });
+    });
+  }
+}
+
+autoUpdater.on('update-downloaded', () => {
+  dialog.showMessageBox(win, {
+    type: 'info', buttons: ['Redémarrer', 'Plus tard'], defaultId: 0,
+    message: 'Mise à jour prête', detail: 'Une nouvelle version a été téléchargée. Redémarrer pour l’installer ?',
+  }).then((r) => { if (r.response === 0) autoUpdater.quitAndInstall(); });
+});
+
 ipcMain.handle('getServerUrl', () => store.get('serverUrl', DEFAULT_URL));
 ipcMain.handle('setServerUrl', (_e, url) => {
   store.set('serverUrl', normalizeUrl(url));
@@ -93,6 +118,9 @@ ipcMain.handle('setServerUrl', (_e, url) => {
   loadServer();
 });
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  createWindow();
+  checkForUpdates(); // silent check on every launch
+});
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
 app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
