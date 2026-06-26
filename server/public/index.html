@@ -9,7 +9,7 @@
   * { box-sizing:border-box; } body { margin:0; font-family:system-ui,sans-serif; background:var(--bg); color:var(--ink); }
   header { padding:14px 18px; background:var(--card); display:flex; justify-content:space-between; align-items:center; }
   header b { color:var(--acc); } .bal { color:var(--acc); font-weight:700; }
-  main { max-width:760px; margin:0 auto; padding:18px; }
+  main { max-width:760px; margin:0 auto; padding:18px; padding-bottom:240px; }
   .card { background:var(--card); border-radius:12px; padding:16px; margin-bottom:16px; }
   h2 { margin:0 0 10px; font-size:15px; color:var(--mut); text-transform:uppercase; letter-spacing:.5px; }
   input,button { font:inherit; padding:9px 12px; border-radius:8px; border:1px solid #2b2f3c; background:#11141c; color:var(--ink); }
@@ -18,15 +18,42 @@
   .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
   .ev { border:1px solid #262a36; border-radius:10px; padding:12px; margin-bottom:10px; }
   .ev h3 { margin:0 0 8px; font-size:15px; }
-  .pl { margin-top:8px; } .pl h4 { margin:6px 0 2px; font-size:13px; color:var(--acc); }
-  .mkt { display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-top:1px solid #20242f; }
+  .muted { color:var(--mut); font-size:13px; }
+
+  /* Lobby */
+  .lobby { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:10px; margin-top:8px; }
+  .pcard { display:flex; flex-direction:column; align-items:center; gap:6px; background:#222633; border:1px solid #2b2f3c; border-radius:12px; padding:14px 10px; cursor:pointer; color:var(--ink); }
+  .pcard:hover { background:#2c3142; border-color:var(--acc); }
+  .ava { width:46px; height:46px; border-radius:50%; background:var(--acc); color:#1a1205; font-weight:800; font-size:20px; display:flex; align-items:center; justify-content:center; }
+  .pname { font-weight:700; font-size:14px; }
+  .live { font-size:11px; color:var(--win); }
+
+  /* Player page */
+  .phead { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+  .phead h3 { margin:0; font-size:18px; }
+  .back { padding:6px 10px; }
+  .card2 { background:#11141c; border:1px solid #262a36; border-radius:10px; padding:10px 12px; margin-bottom:10px; }
+  .result { display:flex; gap:8px; margin-top:6px; }
+  .result .odd { flex:1; text-align:center; }
+  .tabs { display:flex; gap:6px; margin-bottom:10px; }
+  .tab { flex:1; background:#222633; color:var(--mut); border:1px solid #2b2f3c; padding:8px; border-radius:8px; cursor:pointer; font-weight:700; }
+  .tab.on { background:#3a2f12; border-color:var(--acc); color:var(--ink); }
+
+  .mkt { display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-top:1px solid #20242f; }
+  .mkt:first-child { border-top:0; }
   .mkt .sides { display:flex; gap:6px; }
   .odd { background:#222633; border:1px solid transparent; color:var(--ink); padding:6px 9px; border-radius:7px; cursor:pointer; font-weight:600; }
   .odd:hover { background:#2c3142; }
   .odd.sel { background:#3a2f12; border-color:var(--acc); }
   .odd b { color:var(--acc); }
-  .muted { color:var(--mut); font-size:13px; }
-  .bet { display:flex; justify-content:space-between; padding:6px 0; font-size:14px; font-weight:600; }
+
+  /* Coupon (floating bottom sheet) */
+  .slipbar { position:fixed; left:0; right:0; bottom:0; max-width:760px; margin:0 auto; background:var(--card); border-top:1px solid #2b2f3c; border-radius:12px 12px 0 0; padding:12px 16px; box-shadow:0 -6px 24px rgba(0,0,0,.45); }
+  .slipbar h2 { margin:0 0 8px; }
+  .bet { display:flex; justify-content:space-between; padding:5px 0; font-size:14px; font-weight:600; }
+  .x { padding:2px 7px; }
+
+  /* History */
   .ticket { border:1px solid #262a36; border-radius:10px; padding:8px 12px; margin-bottom:8px; }
   .leg { display:flex; justify-content:space-between; padding:3px 0; font-size:13px; border-top:1px solid #20242f; }
   .won { color:var(--win); } .lost { color:var(--lose); }
@@ -57,18 +84,7 @@
 
     <div class="card">
       <h2>Paris en cours</h2>
-      <div id="events" class="muted">Aucun event ouvert. Lance une ranked (avec le poller actif) 👀</div>
-    </div>
-
-    <div class="card" id="slipCard" style="display:none">
-      <h2>Coupon</h2>
-      <div id="slip"></div>
-      <div class="row" style="margin-top:10px">
-        <input id="stake" type="number" min="1" value="50" style="width:90px" oninput="renderSlip()" />
-        <button onclick="placeSlip()">Parier</button>
-        <button class="ghost" onclick="clearSlip()">Vider</button>
-      </div>
-      <div id="slipInfo" class="muted" style="margin-top:8px"></div>
+      <div id="view" class="muted">Aucun event ouvert. Lance une ranked (avec le poller actif) 👀</div>
     </div>
 
     <div class="card">
@@ -78,14 +94,39 @@
     <button class="ghost" onclick="logout()">Déconnexion</button>
   </div>
 </main>
+
+<div id="slip" class="slipbar hide">
+  <h2>Coupon</h2>
+  <div id="slipLegs"></div>
+  <div class="row" style="margin-top:8px">
+    <input id="stake" type="number" min="1" value="50" style="width:90px" oninput="renderSlip()" />
+    <button onclick="placeSlip()">Parier</button>
+    <button class="ghost" onclick="clearSlip()">Vider</button>
+  </div>
+  <div id="slipInfo" class="muted" style="margin-top:8px"></div>
+</div>
+
 <script>
 const $ = (id) => document.getElementById(id);
 const api = (p, opt) => fetch('/api' + p, Object.assign({ headers: { 'Content-Type': 'application/json' } }, opt)).then((r) => r.json());
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 
 let poll = null;
-let slip = [];        // current coupon: [{matchId, marketId, side}]
-const boards = {};    // matchId → priced board (for odds/labels)
-function setBal(me) { $('who').innerHTML = me.username + ' · <span class="bal">' + me.balance + ' Clout</span>'; }
+let slip = [];          // coupon: [{matchId, marketId, side}]
+let eventsCache = [];   // last /events payload
+const boards = {};      // matchId → board (for odds/labels)
+let view = 'lobby';     // 'lobby' | 'player'
+let curMatch = null, curSlot = null, curTab = 'combat';
+
+const CATS = [{ key:'combat', label:'Combat' }, { key:'objectives', label:'Objectifs' }, { key:'farm', label:'Farm' }];
+// Fallback for board items created before the cat field existed.
+const CAT_OF = { win:'result', kills:'combat', deaths:'combat', assists:'combat', fbself:'combat', mk2:'combat', mk3:'combat', gkills:'combat', fbteam:'objectives', fdteam:'objectives', fbaron:'objectives', ftower:'objectives', drakes:'objectives', cs:'farm', dur:'farm', csvs:'farm' };
+const defOf = (m) => m.defId || String(m.id || '').split(':').pop();
+const catOf = (m) => m.cat || CAT_OF[defOf(m)] || 'combat';
+const queueName = (q) => q === 440 ? 'Flex' : q === 420 ? 'Solo/Duo' : 'Ranked';
+const shortTitle = (t) => { const p = String(t).split(' · '); return p.length > 1 ? p.slice(1).join(' · ') : t; };
+
+function setBal(me) { $('who').innerHTML = esc(me.username) + ' · <span class="bal">' + me.balance + ' Clout</span>'; }
 
 async function refresh() {
   const me = await api('/me').catch(() => null);
@@ -96,16 +137,14 @@ async function refresh() {
   }
   $('authCard').classList.add('hide'); $('app').classList.remove('hide');
   setBal(me);
-  renderAccounts(); renderEvents(); renderBets();
-  // Auto-refresh: a betting event opens ~30s after a game starts, so poll for it.
+  renderAccounts(); await loadEvents(); renderBets();
   if (!poll) poll = setInterval(tick, 12000);
 }
-
 async function tick() {
   const me = await api('/me').catch(() => null);
   if (!me || !me.username) { if (poll) { clearInterval(poll); poll = null; } return; }
   setBal(me);
-  renderEvents(); renderBets();
+  await loadEvents(); renderBets();
 }
 async function register() {
   const r = await api('/register', { method:'POST', body: JSON.stringify({ username:$('u').value, password:$('p').value }) });
@@ -124,34 +163,84 @@ async function renderAccounts() {
   const a = await api('/accounts');
   $('accs').textContent = a.length ? a.map((x) => x.riot_id).join(' · ') : 'aucun compte lié';
 }
-async function renderEvents() {
-  const evs = await api('/events');
-  if (!evs.length) { $('events').textContent = 'Aucun event ouvert.'; return; }
-  $('events').innerHTML = evs.map((ev) => {
-    boards[ev.match_id] = ev.board || [];
-    const groups = {};
-    for (const m of ev.board || []) { const k = m.name || ev.champion; (groups[k] = groups[k] || []).push(m); }
-    const sections = Object.keys(groups).map((nm) => {
-      const rows = groups[nm].map((m) =>
-        '<div class="mkt"><span>' + m.title + '</span><span class="sides">' +
-        '<button class="odd" id="o_' + ev.match_id + '_' + m.id + '_yes" onclick="pick(\'' + ev.match_id + '\',\'' + m.id + '\',\'yes\')">' + m.yes.label + ' <b>' + m.yes.odds.toFixed(2) + '</b></button>' +
-        '<button class="odd" id="o_' + ev.match_id + '_' + m.id + '_no" onclick="pick(\'' + ev.match_id + '\',\'' + m.id + '\',\'no\')">' + m.no.label + ' <b>' + m.no.odds.toFixed(2) + '</b></button>' +
-        '</span></div>').join('');
-      return '<div class="pl"><h4>' + nm + '</h4>' + rows + '</div>';
-    }).join('');
-    return '<div class="ev"><h3>🎮 ' + ev.champion + ' <span class="muted">(' + ev.riot_id + ')</span></h3>' + sections + '</div>';
-  }).join('');
-  markSelected();
-  renderSlip();
+
+async function loadEvents() {
+  eventsCache = await api('/events');
+  for (const ev of eventsCache) boards[ev.match_id] = ev.board || [];
+  render();
 }
 
-// ---- Bet slip / coupon (1 pick = simple, plusieurs = combiné) ----
+// ---- View router ----
+function render() {
+  if (view === 'player') {
+    const ev = eventsCache.find((e) => e.match_id === curMatch);
+    const items = ev ? (ev.board || []).filter((m) => (m.slot || 'p0') === curSlot) : [];
+    if (!ev || !items.length) view = 'lobby'; // player/game gone → fall back
+  }
+  if (view === 'player') renderPlayer(); else renderLobby();
+  renderSlip(); markSelected();
+}
+
+function playersOf(ev) {
+  const map = {};
+  for (const m of ev.board || []) {
+    const slot = m.slot || 'p0';
+    if (!map[slot]) map[slot] = { slot, name: m.name || ev.champion || ev.riot_id || 'Joueur' };
+  }
+  return Object.values(map);
+}
+
+function renderLobby() {
+  if (!eventsCache.length) { $('view').className = 'muted'; $('view').textContent = 'Aucun event ouvert. Lance une ranked (avec le poller actif) 👀'; return; }
+  $('view').className = '';
+  $('view').innerHTML = eventsCache.map((ev) => {
+    const cards = playersOf(ev).map((p) =>
+      '<button class="pcard" onclick="openPlayer(\'' + ev.match_id + '\',\'' + p.slot + '\')">' +
+        '<span class="ava">' + esc((p.name[0] || '?').toUpperCase()) + '</span>' +
+        '<span class="pname">' + esc(p.name) + '</span>' +
+        '<span class="live">● live</span>' +
+      '</button>').join('');
+    return '<div class="ev"><h3>🎮 ' + queueName(ev.queue_id) + '</h3><div class="lobby">' + cards + '</div></div>';
+  }).join('');
+}
+
+function openPlayer(matchId, slot) { curMatch = matchId; curSlot = slot; curTab = 'combat'; view = 'player'; render(); }
+function back() { view = 'lobby'; render(); }
+function setTab(t) { curTab = t; render(); }
+
+function oddBtn(matchId, m, side) {
+  const s = m[side]; if (!s) return '';
+  return '<button class="odd" id="o_' + matchId + '_' + m.id + '_' + side + '" ' +
+    'onclick="pick(\'' + matchId + '\',\'' + m.id + '\',\'' + side + '\')">' +
+    esc(s.label) + ' <b>' + s.odds.toFixed(2) + '</b></button>';
+}
+
+function renderPlayer() {
+  const ev = eventsCache.find((e) => e.match_id === curMatch);
+  const items = (ev.board || []).filter((m) => (m.slot || 'p0') === curSlot);
+  const name = (items[0] && items[0].name) || ev.champion || 'Joueur';
+  const winM = items.find((m) => defOf(m) === 'win');
+  const result = winM ? '<div class="result">' + oddBtn(ev.match_id, winM, 'yes') + oddBtn(ev.match_id, winM, 'no') + '</div>' : '<div class="muted">—</div>';
+  const tabs = CATS.map((c) => '<button class="tab' + (c.key === curTab ? ' on' : '') + '" onclick="setTab(\'' + c.key + '\')">' + c.label + '</button>').join('');
+  const rows = items.filter((m) => defOf(m) !== 'win' && catOf(m) === curTab).map((m) =>
+    '<div class="mkt"><span>' + esc(shortTitle(m.title)) + '</span>' +
+    '<span class="sides">' + oddBtn(ev.match_id, m, 'yes') + oddBtn(ev.match_id, m, 'no') + '</span></div>'
+  ).join('') || '<div class="muted">Aucun marché ici.</div>';
+  $('view').className = '';
+  $('view').innerHTML =
+    '<div class="phead"><button class="ghost back" onclick="back()">← Retour</button><h3>' + esc(name) + '</h3></div>' +
+    '<div class="card2"><div class="muted">Résultat</div>' + result + '</div>' +
+    '<div class="tabs">' + tabs + '</div>' +
+    '<div class="card2">' + rows + '</div>';
+}
+
+// ---- Coupon (1 pick = simple, plusieurs = combiné; mixe les amis du même match) ----
 function selOf(matchId, marketId, side) {
   const m = (boards[matchId] || []).find((x) => x.id === marketId);
   return m ? m[side] : null;
 }
 function pick(matchId, marketId, side) {
-  if (slip.length && slip[0].matchId !== matchId) slip = []; // un seul event à la fois
+  if (slip.length && slip[0].matchId !== matchId) slip = []; // un seul match à la fois
   const i = slip.findIndex((p) => p.marketId === marketId);
   if (i >= 0) {
     if (slip[i].side === side) slip.splice(i, 1); // re-clic = retire
@@ -169,31 +258,34 @@ function markSelected() {
   }
 }
 function renderSlip() {
-  const card = $('slipCard');
-  if (!slip.length) { card.style.display = 'none'; return; }
-  card.style.display = '';
+  const bar = $('slip');
+  if (!slip.length) { bar.classList.add('hide'); return; }
+  slip = slip.filter((p) => selOf(p.matchId, p.marketId, p.side));
+  if (!slip.length) { bar.classList.add('hide'); return; }
+  bar.classList.remove('hide');
   let combined = 1;
-  $('slip').innerHTML = slip.map((p) => {
+  $('slipLegs').innerHTML = slip.map((p) => {
     const m = (boards[p.matchId] || []).find((x) => x.id === p.marketId);
     const s = selOf(p.matchId, p.marketId, p.side);
     combined *= s.odds;
-    return '<div class="bet"><span>' + (m ? m.title : p.marketId) + ' · ' + s.label + '</span><span>@' + s.odds.toFixed(2) +
-      ' <button class="ghost" style="padding:2px 7px" onclick="pick(\'' + p.matchId + '\',\'' + p.marketId + '\',\'' + p.side + '\')">✕</button></span></div>';
+    return '<div class="bet"><span>' + esc(m ? m.title : p.marketId) + ' · ' + esc(s.label) + '</span><span>@' + s.odds.toFixed(2) +
+      ' <button class="ghost x" onclick="pick(\'' + p.matchId + '\',\'' + p.marketId + '\',\'' + p.side + '\')">✕</button></span></div>';
   }).join('');
   const stake = Number($('stake').value) || 0;
   const kind = slip.length > 1 ? 'Combiné ×' + combined.toFixed(2) : 'Simple @' + combined.toFixed(2);
   $('slipInfo').textContent = kind + ' — gain potentiel : ' + Math.round(stake * combined) + ' Clout';
 }
-function clearSlip() { slip = []; renderSlip(); markSelected(); }
+function clearSlip() { slip = []; render(); }
 async function placeSlip() {
   if (!slip.length) return;
   const stake = Number($('stake').value);
   const r = await api('/bet', { method:'POST', body: JSON.stringify({
     matchId: slip[0].matchId, stake, picks: slip.map((p) => ({ marketId: p.marketId, side: p.side })),
   }) });
-  if (r.ok) { clearSlip(); refresh(); }
+  if (r.ok) { slip = []; refresh(); }
   else { $('slipInfo').textContent = 'Pari refusé: ' + r.error; }
 }
+
 async function renderBets() {
   const bs = await api('/bets');
   if (!bs.length) { $('bets').textContent = 'aucun pari'; return; }
@@ -205,12 +297,12 @@ async function renderBets() {
       : 'PERDU';
     const kind = (b.type === 'parlay' ? 'Combiné ×' + b.combinedOdds.toFixed(2) : 'Simple @' + b.combinedOdds.toFixed(2));
     const legs = (b.legs || []).map((l) =>
-      '<div class="leg"><span>' + l.title + ' · <b>' + l.side + '</b></span><span class="muted">@' + l.odds.toFixed(2) + '</span></div>'
+      '<div class="leg"><span>' + esc(l.title) + ' · <b>' + esc(l.side) + '</b></span><span class="muted">@' + l.odds.toFixed(2) + '</span></div>'
     ).join('');
     return '<div class="ticket">' +
       '<div class="bet"><span>' + kind + ' · mise ' + b.stake + '</span><span class="' + cls + '">' + res + '</span></div>' +
       legs +
-      '<div class="muted" style="font-size:11px">' + b.matchId + '</div></div>';
+      '<div class="muted" style="font-size:11px">' + esc(b.matchId) + '</div></div>';
   }).join('');
 }
 refresh();
