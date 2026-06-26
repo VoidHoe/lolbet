@@ -71,8 +71,14 @@ drives what `render()` shows. Auth / account-linking / history / balance cards s
      `teamPosition` (fallback `individualPosition`).
    - `outFarmedOpponent = myCs > opponentCs`.
    - If no opponent lane can be resolved (empty position), set
-     `outFarmedOpponent = null`; the leg settles as **push/refund** rather than a
-     forced loss. (Pricing simply skips `null` samples from the hit count.)
+     `outFarmedOpponent = null`. **Settlement** then resolves the YES side as
+     `false` (did not out-farm) — no changes to `store.js`/`bets.js` are needed.
+     **Pricing** excludes `null` samples via an optional `def.sample` predicate so a
+     missing-opponent past game doesn't deflate the probability.
+   - Rationale: events only open for ranked 5v5 (queues 420/440) where lane
+     positions are always populated, so `null` is effectively unreachable in
+     practice. A per-leg push pipeline (which does not exist today) would be
+     disproportionate.
 
 ### Backend — no other changes
 
@@ -115,8 +121,8 @@ yes/no) exactly like today, just laid out in an aligned row.
 
 ## Error handling
 
-- `outFarmedOpponent === null` (no lane opponent) → leg pushes (refund), consistent
-  with existing `pushed` bet status.
+- `outFarmedOpponent === null` (no lane opponent) → YES side settles as a loss;
+  excluded from pricing samples. No settlement-engine changes.
 - Old open events created before this change won't have `cat` on board items. The
   frontend falls back to a tiny `defId → cat` map so grouping still works; events
   are per-game and short-lived regardless.
