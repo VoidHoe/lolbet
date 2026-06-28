@@ -39,6 +39,7 @@ let poll = null;
 // 1v1 challenges (backed by /api/challenges)
 let challenges = [];      // rows from /api/challenges
 let chalUsers = [];       // other usernames, from /api/users
+let chalFormSig = null;   // signature of the rendered form; avoids clobbering input on poll
 const CHAL_STATS = window.MOCK.CHAL_STATS;
 const statDef = (k) => CHAL_STATS.find((s) => s.key === k) || CHAL_STATS[0];
 
@@ -405,7 +406,13 @@ function NewChallengeForm() {
 }
 
 function ChallengesView() {
-  $('chalNew').innerHTML = NewChallengeForm();
+  // Only rebuild the form when the opponent list changes — otherwise the 12s
+  // poll would wipe the user's selected opponent / stat / stake mid-use.
+  const sig = chalUsers.join('|');
+  if (chalFormSig !== sig || !$('chalNew').children.length) {
+    $('chalNew').innerHTML = NewChallengeForm();
+    chalFormSig = sig;
+  }
   const dispOf = (r) => chalView(r).disp;
   const groups = [
     ['Incoming', (r) => dispOf(r) === 'incoming'],
