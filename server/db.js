@@ -78,6 +78,28 @@ async function init() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       settled_at TIMESTAMPTZ
     )`);
+  // 1v1 head-to-head challenges: two users wager on a stat, each measured in
+  // their own next finished ranked game. Stakes escrowed on create/accept,
+  // settled by the poller when both sides' games complete.
+  await query(`
+    CREATE TABLE IF NOT EXISTS challenges (
+      id          BIGSERIAL PRIMARY KEY,
+      from_user   TEXT NOT NULL,
+      to_user     TEXT NOT NULL,
+      stat        TEXT NOT NULL,
+      stake       INTEGER NOT NULL,
+      status      TEXT NOT NULL DEFAULT 'pending',
+      from_puuid  TEXT,
+      to_puuid    TEXT,
+      from_match  TEXT,
+      to_match    TEXT,
+      from_val    REAL,
+      to_val      REAL,
+      winner      TEXT,
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+      accepted_at TIMESTAMPTZ,
+      settled_at  TIMESTAMPTZ
+    )`);
   return true;
 }
 

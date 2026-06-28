@@ -1,311 +1,121 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>lolbet</title>
-<style>
-  :root { --bg:#0e1015; --card:#1a1d27; --ink:#e7e9ee; --mut:#8a90a2; --acc:#f0b132; --win:#3ad17a; --lose:#e2545a; }
-  * { box-sizing:border-box; } body { margin:0; font-family:system-ui,sans-serif; background:var(--bg); color:var(--ink); }
-  header { padding:14px 18px; background:var(--card); display:flex; justify-content:space-between; align-items:center; }
-  header b { color:var(--acc); } .bal { color:var(--acc); font-weight:700; }
-  main { max-width:760px; margin:0 auto; padding:18px; padding-bottom:240px; }
-  .card { background:var(--card); border-radius:12px; padding:16px; margin-bottom:16px; }
-  h2 { margin:0 0 10px; font-size:15px; color:var(--mut); text-transform:uppercase; letter-spacing:.5px; }
-  input,button { font:inherit; padding:9px 12px; border-radius:8px; border:1px solid #2b2f3c; background:#11141c; color:var(--ink); }
-  button { background:var(--acc); color:#1a1205; border:0; font-weight:700; cursor:pointer; }
-  button.ghost { background:#222633; color:var(--ink); }
-  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
-  .ev { border:1px solid #262a36; border-radius:10px; padding:12px; margin-bottom:10px; }
-  .ev h3 { margin:0 0 8px; font-size:15px; }
-  .muted { color:var(--mut); font-size:13px; }
-
-  /* Lobby */
-  .lobby { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:10px; margin-top:8px; }
-  .pcard { display:flex; flex-direction:column; align-items:center; gap:6px; background:#222633; border:1px solid #2b2f3c; border-radius:12px; padding:14px 10px; cursor:pointer; color:var(--ink); }
-  .pcard:hover { background:#2c3142; border-color:var(--acc); }
-  .ava { width:46px; height:46px; border-radius:50%; background:var(--acc); color:#1a1205; font-weight:800; font-size:20px; display:flex; align-items:center; justify-content:center; }
-  .pname { font-weight:700; font-size:14px; }
-  .live { font-size:11px; color:var(--win); }
-
-  /* Player page */
-  .phead { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
-  .phead h3 { margin:0; font-size:18px; }
-  .back { padding:6px 10px; }
-  .card2 { background:#11141c; border:1px solid #262a36; border-radius:10px; padding:10px 12px; margin-bottom:10px; }
-  .result { display:flex; gap:8px; margin-top:6px; }
-  .result .odd { flex:1; text-align:center; }
-  .tabs { display:flex; gap:6px; margin-bottom:10px; }
-  .tab { flex:1; background:#222633; color:var(--mut); border:1px solid #2b2f3c; padding:8px; border-radius:8px; cursor:pointer; font-weight:700; }
-  .tab.on { background:#3a2f12; border-color:var(--acc); color:var(--ink); }
-
-  .mkt { display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-top:1px solid #20242f; }
-  .mkt:first-child { border-top:0; }
-  .mkt .sides { display:flex; gap:6px; }
-  .odd { background:#222633; border:1px solid transparent; color:var(--ink); padding:6px 9px; border-radius:7px; cursor:pointer; font-weight:600; }
-  .odd:hover { background:#2c3142; }
-  .odd.sel { background:#3a2f12; border-color:var(--acc); }
-  .odd b { color:var(--acc); }
-
-  /* Coupon (floating bottom sheet) */
-  .slipbar { position:fixed; left:0; right:0; bottom:0; max-width:760px; margin:0 auto; background:var(--card); border-top:1px solid #2b2f3c; border-radius:12px 12px 0 0; padding:12px 16px; box-shadow:0 -6px 24px rgba(0,0,0,.45); }
-  .slipbar h2 { margin:0 0 8px; }
-  .bet { display:flex; justify-content:space-between; padding:5px 0; font-size:14px; font-weight:600; }
-  .x { padding:2px 7px; }
-
-  /* History */
-  .ticket { border:1px solid #262a36; border-radius:10px; padding:8px 12px; margin-bottom:8px; }
-  .leg { display:flex; justify-content:space-between; padding:3px 0; font-size:13px; border-top:1px solid #20242f; }
-  .won { color:var(--win); } .lost { color:var(--lose); }
-  .hide { display:none; }
-</style>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#080b13" />
+<title>RiftBook — Private League Betting Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
-<header><span><b>lolbet</b> 🎰</span><span id="who" class="muted"></span></header>
-<main>
-  <div class="card" id="authCard">
-    <h2>Connexion</h2>
-    <div class="row">
-      <input id="u" placeholder="pseudo" /><input id="p" type="password" placeholder="mot de passe" />
-      <button onclick="login()">Login</button><button class="ghost" onclick="register()">Créer</button>
-    </div>
-    <div id="authMsg" class="muted"></div>
-  </div>
 
-  <div id="app" class="hide">
-    <div class="card">
-      <h2>Mes comptes LoL</h2>
-      <div id="accs" class="muted"></div>
-      <div class="row" style="margin-top:8px">
-        <input id="riot" placeholder="Pseudo#TAG" /><button onclick="link()">Lier</button>
+<!-- ============ TOP BAR ============ -->
+<header class="topbar hide" id="topbar">
+  <button class="icon-btn menu-btn" data-act="menu" aria-label="Menu">☰</button>
+  <div class="brand"><span class="logo">R</span><span><span class="rb">Rift</span><span class="book">Book</span></span></div>
+  <nav class="nav">
+    <a href="#" class="on" data-act="nav" data-nav="live">Live</a>
+    <a href="#" data-act="nav" data-nav="challenges">1v1</a>
+    <a href="#" data-act="nav" data-nav="mybets">My Bets</a>
+    <a href="#" data-act="nav" data-nav="leaderboard">Leaderboard</a>
+  </nav>
+  <div class="top-right">
+    <span class="pill"><span class="dot"></span> Private League Hub</span>
+    <span class="balance"><span class="coin"></span><b id="balanceVal">0</b><span class="label">coins</span></span>
+    <button class="avatar" id="avatarBtn" data-act="logout" title="Log out">?</button>
+  </div>
+</header>
+
+<!-- ============ APP SHELL ============ -->
+<div class="shell hide" id="shell">
+
+  <!-- left sidebar: friends + linked accounts -->
+  <aside class="sidebar" id="sidebar">
+    <div class="panel" id="friendsPanel"></div>
+    <div class="panel" style="margin-top:16px">
+      <div class="panel-h"><h2>My LoL Accounts</h2></div>
+      <div class="panel-b">
+        <div class="acct-list" id="acctList"></div>
+        <div class="link-row">
+          <input id="riotInput" placeholder="Name#TAG" autocomplete="off" />
+          <button class="btn-ghost" id="btnLink">Link</button>
+        </div>
+        <div class="mini-msg" id="linkMsg"></div>
       </div>
-      <div id="linkMsg" class="muted"></div>
+    </div>
+  </aside>
+
+  <!-- main content -->
+  <main class="content">
+    <!-- LIVE view: dashboard with hero, match cards, recent + leaderboard -->
+    <div id="view-live">
+      <div class="section-title">
+        <h1>Live Matches</h1>
+        <span class="sub">Bet fake coins on your friends' ranked games</span>
+      </div>
+      <section id="hero"></section>
+      <section class="cards" id="board"></section>
+      <section class="secondary">
+        <div class="panel">
+          <div class="panel-h"><h2>Recent Bets</h2><span class="count">latest</span></div>
+          <div class="panel-b" id="recentBody"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-h"><h2>Leaderboard</h2><span class="count">by profit</span></div>
+          <div class="panel-b" id="leaderboardBody"></div>
+        </div>
+      </section>
     </div>
 
-    <div class="card">
-      <h2>Paris en cours</h2>
-      <div id="view" class="muted">Aucun event ouvert. Lance une ranked (avec le poller actif) 👀</div>
+    <!-- 1v1 CHALLENGES view -->
+    <div id="view-challenges" class="hide">
+      <div class="section-title"><h1>1v1 Challenges</h1><span class="sub">Wager coins head-to-head against a friend</span></div>
+      <div class="chal-banner">🤝 Stakes are escrowed when you create or accept. Cross-game duel — settles automatically when both players' games finish. Fake coins only.</div>
+      <div id="chalNew"></div>
+      <div id="chalLists"></div>
     </div>
 
-    <div class="card">
-      <h2>Mes paris</h2>
-      <div id="bets" class="muted">—</div>
+    <!-- MY BETS view: full history only -->
+    <div id="view-mybets" class="hide">
+      <div class="section-title"><h1>My Bets</h1><span class="sub">Your full betting history</span></div>
+      <div class="panel"><div class="panel-b" id="myBetsBody"></div></div>
     </div>
-    <button class="ghost" onclick="logout()">Déconnexion</button>
-  </div>
-</main>
 
-<div id="slip" class="slipbar hide">
-  <h2>Coupon</h2>
-  <div id="slipLegs"></div>
-  <div class="row" style="margin-top:8px">
-    <input id="stake" type="number" min="1" value="50" style="width:90px" oninput="renderSlip()" />
-    <button onclick="placeSlip()">Parier</button>
-    <button class="ghost" onclick="clearSlip()">Vider</button>
-  </div>
-  <div id="slipInfo" class="muted" style="margin-top:8px"></div>
+    <!-- LEADERBOARD view: full ranking only -->
+    <div id="view-leaderboard" class="hide">
+      <div class="section-title"><h1>Leaderboard</h1><span class="sub">Ranked by fake-coin profit</span></div>
+      <div class="panel"><div class="panel-b" id="lbFullBody"></div></div>
+    </div>
+  </main>
+
+  <!-- right sidebar: bet slip (sticky desktop / bottom drawer mobile) — same
+       element in both layouts; CSS repositions it to a bottom sheet on mobile -->
+  <aside class="panel betslip-col" id="betslip"></aside>
 </div>
 
-<script>
-const $ = (id) => document.getElementById(id);
-const api = (p, opt) => fetch('/api' + p, Object.assign({ headers: { 'Content-Type': 'application/json' } }, opt)).then((r) => r.json());
-const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+<!-- bet slip element also referenced on mobile via #betslip above; CSS repositions it -->
+<div class="sidebar-scrim" id="scrim" data-act="scrim"></div>
 
-let poll = null;
-let slip = [];          // coupon: [{matchId, marketId, side}]
-let eventsCache = [];   // last /events payload
-const boards = {};      // matchId → board (for odds/labels)
-let view = 'lobby';     // 'lobby' | 'player'
-let curMatch = null, curSlot = null, curTab = 'combat';
+<!-- ============ AUTH OVERLAY ============ -->
+<div class="auth-wrap" id="authWrap">
+  <div class="auth-card">
+    <div class="brand"><span class="logo">R</span><span><span class="rb">Rift</span><span class="book">Book</span></span></div>
+    <div class="tagline">Private friends-only League betting hub</div>
+    <div class="field"><label>Username</label><input id="authUser" placeholder="your handle" autocomplete="username" /></div>
+    <div class="field"><label>Password</label><input id="authPass" type="password" placeholder="••••••••" autocomplete="current-password" /></div>
+    <div class="auth-actions">
+      <button class="btn-primary" id="btnLogin">Log in</button>
+      <button class="btn-ghost" id="btnRegister">Create account</button>
+    </div>
+    <div class="auth-msg" id="authMsg"></div>
+    <div class="warn"><b>Fake coins only.</b> No deposits, no withdrawals, no real money. Friends-only.</div>
+  </div>
+</div>
 
-const CATS = [{ key:'combat', label:'Combat' }, { key:'objectives', label:'Objectifs' }, { key:'farm', label:'Farm' }];
-// Fallback for board items created before the cat field existed.
-const CAT_OF = { win:'result', kills:'combat', deaths:'combat', assists:'combat', fbself:'combat', mk2:'combat', mk3:'combat', gkills:'combat', fbteam:'objectives', fdteam:'objectives', fbaron:'objectives', ftower:'objectives', drakes:'objectives', cs:'farm', dur:'farm', csvs:'farm' };
-const defOf = (m) => m.defId || String(m.id || '').split(':').pop();
-const catOf = (m) => m.cat || CAT_OF[defOf(m)] || 'combat';
-const queueName = (q) => q === 440 ? 'Flex' : q === 420 ? 'Solo/Duo' : 'Ranked';
-const shortTitle = (t) => { const p = String(t).split(' · '); return p.length > 1 ? p.slice(1).join(' · ') : t; };
-
-function setBal(me) { $('who').innerHTML = esc(me.username) + ' · <span class="bal">' + me.balance + ' Clout</span>'; }
-
-async function refresh() {
-  const me = await api('/me').catch(() => null);
-  if (!me || !me.username) {
-    $('authCard').classList.remove('hide'); $('app').classList.add('hide'); $('who').textContent = '';
-    if (poll) { clearInterval(poll); poll = null; }
-    return;
-  }
-  $('authCard').classList.add('hide'); $('app').classList.remove('hide');
-  setBal(me);
-  renderAccounts(); await loadEvents(); renderBets();
-  if (!poll) poll = setInterval(tick, 12000);
-}
-async function tick() {
-  const me = await api('/me').catch(() => null);
-  if (!me || !me.username) { if (poll) { clearInterval(poll); poll = null; } return; }
-  setBal(me);
-  await loadEvents(); renderBets();
-}
-async function register() {
-  const r = await api('/register', { method:'POST', body: JSON.stringify({ username:$('u').value, password:$('p').value }) });
-  $('authMsg').textContent = r.ok ? 'Compte créé, connecte-toi.' : 'Échec: ' + r.error;
-}
-async function login() {
-  const r = await api('/login', { method:'POST', body: JSON.stringify({ username:$('u').value, password:$('p').value }) });
-  if (r.ok) refresh(); else $('authMsg').textContent = 'Échec: ' + r.error;
-}
-async function logout() { await api('/logout', { method:'POST' }); refresh(); }
-async function link() {
-  const r = await api('/link', { method:'POST', body: JSON.stringify({ riotId:$('riot').value }) });
-  $('linkMsg').textContent = r.ok ? 'Lié ✅' : 'Échec: ' + r.error; renderAccounts();
-}
-async function renderAccounts() {
-  const a = await api('/accounts');
-  $('accs').textContent = a.length ? a.map((x) => x.riot_id).join(' · ') : 'aucun compte lié';
-}
-
-async function loadEvents() {
-  eventsCache = await api('/events');
-  for (const ev of eventsCache) boards[ev.match_id] = ev.board || [];
-  render();
-}
-
-// ---- View router ----
-function render() {
-  if (view === 'player') {
-    const ev = eventsCache.find((e) => e.match_id === curMatch);
-    const items = ev ? (ev.board || []).filter((m) => (m.slot || 'p0') === curSlot) : [];
-    if (!ev || !items.length) view = 'lobby'; // player/game gone → fall back
-  }
-  if (view === 'player') renderPlayer(); else renderLobby();
-  renderSlip(); markSelected();
-}
-
-function playersOf(ev) {
-  const map = {};
-  for (const m of ev.board || []) {
-    const slot = m.slot || 'p0';
-    if (!map[slot]) map[slot] = { slot, name: m.name || ev.champion || ev.riot_id || 'Joueur' };
-  }
-  return Object.values(map);
-}
-
-function renderLobby() {
-  if (!eventsCache.length) { $('view').className = 'muted'; $('view').textContent = 'Aucun event ouvert. Lance une ranked (avec le poller actif) 👀'; return; }
-  $('view').className = '';
-  $('view').innerHTML = eventsCache.map((ev) => {
-    const cards = playersOf(ev).map((p) =>
-      '<button class="pcard" onclick="openPlayer(\'' + ev.match_id + '\',\'' + p.slot + '\')">' +
-        '<span class="ava">' + esc((p.name[0] || '?').toUpperCase()) + '</span>' +
-        '<span class="pname">' + esc(p.name) + '</span>' +
-        '<span class="live">● live</span>' +
-      '</button>').join('');
-    return '<div class="ev"><h3>🎮 ' + queueName(ev.queue_id) + '</h3><div class="lobby">' + cards + '</div></div>';
-  }).join('');
-}
-
-function openPlayer(matchId, slot) { curMatch = matchId; curSlot = slot; curTab = 'combat'; view = 'player'; render(); }
-function back() { view = 'lobby'; render(); }
-function setTab(t) { curTab = t; render(); }
-
-function oddBtn(matchId, m, side) {
-  const s = m[side]; if (!s) return '';
-  return '<button class="odd" id="o_' + matchId + '_' + m.id + '_' + side + '" ' +
-    'onclick="pick(\'' + matchId + '\',\'' + m.id + '\',\'' + side + '\')">' +
-    esc(s.label) + ' <b>' + s.odds.toFixed(2) + '</b></button>';
-}
-
-function renderPlayer() {
-  const ev = eventsCache.find((e) => e.match_id === curMatch);
-  const items = (ev.board || []).filter((m) => (m.slot || 'p0') === curSlot);
-  const name = (items[0] && items[0].name) || ev.champion || 'Joueur';
-  const winM = items.find((m) => defOf(m) === 'win');
-  const result = winM ? '<div class="result">' + oddBtn(ev.match_id, winM, 'yes') + oddBtn(ev.match_id, winM, 'no') + '</div>' : '<div class="muted">—</div>';
-  const tabs = CATS.map((c) => '<button class="tab' + (c.key === curTab ? ' on' : '') + '" onclick="setTab(\'' + c.key + '\')">' + c.label + '</button>').join('');
-  const rows = items.filter((m) => defOf(m) !== 'win' && catOf(m) === curTab).map((m) =>
-    '<div class="mkt"><span>' + esc(shortTitle(m.title)) + '</span>' +
-    '<span class="sides">' + oddBtn(ev.match_id, m, 'yes') + oddBtn(ev.match_id, m, 'no') + '</span></div>'
-  ).join('') || '<div class="muted">Aucun marché ici.</div>';
-  $('view').className = '';
-  $('view').innerHTML =
-    '<div class="phead"><button class="ghost back" onclick="back()">← Retour</button><h3>' + esc(name) + '</h3></div>' +
-    '<div class="card2"><div class="muted">Résultat</div>' + result + '</div>' +
-    '<div class="tabs">' + tabs + '</div>' +
-    '<div class="card2">' + rows + '</div>';
-}
-
-// ---- Coupon (1 pick = simple, plusieurs = combiné; mixe les amis du même match) ----
-function selOf(matchId, marketId, side) {
-  const m = (boards[matchId] || []).find((x) => x.id === marketId);
-  return m ? m[side] : null;
-}
-function pick(matchId, marketId, side) {
-  if (slip.length && slip[0].matchId !== matchId) slip = []; // un seul match à la fois
-  const i = slip.findIndex((p) => p.marketId === marketId);
-  if (i >= 0) {
-    if (slip[i].side === side) slip.splice(i, 1); // re-clic = retire
-    else slip[i].side = side;                     // autre côté = bascule
-  } else {
-    slip.push({ matchId, marketId, side });
-  }
-  renderSlip(); markSelected();
-}
-function markSelected() {
-  document.querySelectorAll('.odd').forEach((b) => b.classList.remove('sel'));
-  for (const p of slip) {
-    const el = document.getElementById('o_' + p.matchId + '_' + p.marketId + '_' + p.side);
-    if (el) el.classList.add('sel');
-  }
-}
-function renderSlip() {
-  const bar = $('slip');
-  if (!slip.length) { bar.classList.add('hide'); return; }
-  slip = slip.filter((p) => selOf(p.matchId, p.marketId, p.side));
-  if (!slip.length) { bar.classList.add('hide'); return; }
-  bar.classList.remove('hide');
-  let combined = 1;
-  $('slipLegs').innerHTML = slip.map((p) => {
-    const m = (boards[p.matchId] || []).find((x) => x.id === p.marketId);
-    const s = selOf(p.matchId, p.marketId, p.side);
-    combined *= s.odds;
-    return '<div class="bet"><span>' + esc(m ? m.title : p.marketId) + ' · ' + esc(s.label) + '</span><span>@' + s.odds.toFixed(2) +
-      ' <button class="ghost x" onclick="pick(\'' + p.matchId + '\',\'' + p.marketId + '\',\'' + p.side + '\')">✕</button></span></div>';
-  }).join('');
-  const stake = Number($('stake').value) || 0;
-  const kind = slip.length > 1 ? 'Combiné ×' + combined.toFixed(2) : 'Simple @' + combined.toFixed(2);
-  $('slipInfo').textContent = kind + ' — gain potentiel : ' + Math.round(stake * combined) + ' Clout';
-}
-function clearSlip() { slip = []; render(); }
-async function placeSlip() {
-  if (!slip.length) return;
-  const stake = Number($('stake').value);
-  const r = await api('/bet', { method:'POST', body: JSON.stringify({
-    matchId: slip[0].matchId, stake, picks: slip.map((p) => ({ marketId: p.marketId, side: p.side })),
-  }) });
-  if (r.ok) { slip = []; refresh(); }
-  else { $('slipInfo').textContent = 'Pari refusé: ' + r.error; }
-}
-
-async function renderBets() {
-  const bs = await api('/bets');
-  if (!bs.length) { $('bets').textContent = 'aucun pari'; return; }
-  $('bets').innerHTML = bs.map((b) => {
-    const cls = b.status === 'won' ? 'won' : b.status === 'lost' ? 'lost' : 'muted';
-    const res = b.status === 'open' ? 'en cours'
-      : b.status === 'won' ? 'GAGNÉ +' + b.payout
-      : b.status === 'pushed' ? 'remboursé'
-      : 'PERDU';
-    const kind = (b.type === 'parlay' ? 'Combiné ×' + b.combinedOdds.toFixed(2) : 'Simple @' + b.combinedOdds.toFixed(2));
-    const legs = (b.legs || []).map((l) =>
-      '<div class="leg"><span>' + esc(l.title) + ' · <b>' + esc(l.side) + '</b></span><span class="muted">@' + l.odds.toFixed(2) + '</span></div>'
-    ).join('');
-    return '<div class="ticket">' +
-      '<div class="bet"><span>' + kind + ' · mise ' + b.stake + '</span><span class="' + cls + '">' + res + '</span></div>' +
-      legs +
-      '<div class="muted" style="font-size:11px">' + esc(b.matchId) + '</div></div>';
-  }).join('');
-}
-refresh();
-</script>
+<script src="/mock.js"></script>
+<script src="/app.js"></script>
 </body>
 </html>

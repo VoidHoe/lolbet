@@ -8,6 +8,7 @@ const { getRecentStats } = require('../src/form');
 const accounts = require('./accounts');
 const events = require('./events');
 const store = require('./store');
+const challenges = require('./challenges');
 
 const RANKED_QUEUES = [420, 440];
 const isRanked = (queueId) => RANKED_QUEUES.includes(queueId);
@@ -65,6 +66,7 @@ async function settleFinished() {
     let match;
     try { match = await getMatch(ev.match_id); } catch { continue; }
     await store.settleBets(ev, match);
+    await challenges.recordMatch(match); // settle any 1v1 whose game just finished
     await events.markSettled(ev.match_id);
     settled += 1;
     console.log(`[poll] event réglé: ${ev.match_id}`);
