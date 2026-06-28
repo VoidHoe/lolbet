@@ -7,6 +7,7 @@ const accounts = require('./accounts');
 const store = require('./store');
 const events = require('./events');
 const session = require('./session');
+const challenges = require('./challenges');
 const { makeSingle, makeParlay } = require('./bets');
 const { getPuuid } = require('../src/riot');
 
@@ -61,6 +62,30 @@ app.post('/api/link', requireAuth, async (req, res) => {
 
 app.get('/api/events', async (_req, res) => {
   res.json(await events.listOpen());
+});
+
+// Other registered users — opponent picker for 1v1 challenges.
+app.get('/api/users', requireAuth, async (req, res) => {
+  res.json(await accounts.listUsers(req.username));
+});
+
+// 1v1 challenges. create/accept/decline/cancel escrow & refund coins; the
+// poller settles live ones when both players' games finish.
+app.get('/api/challenges', requireAuth, async (req, res) => {
+  res.json(await challenges.listForUser(req.username));
+});
+app.post('/api/challenges', requireAuth, async (req, res) => {
+  const { toUser, stat, stake } = req.body || {};
+  res.json(await challenges.create({ fromUser: req.username, toUser, stat, stake }));
+});
+app.post('/api/challenges/:id/accept', requireAuth, async (req, res) => {
+  res.json(await challenges.accept(req.params.id, req.username));
+});
+app.post('/api/challenges/:id/decline', requireAuth, async (req, res) => {
+  res.json(await challenges.decline(req.params.id, req.username));
+});
+app.post('/api/challenges/:id/cancel', requireAuth, async (req, res) => {
+  res.json(await challenges.cancel(req.params.id, req.username));
 });
 
 // Place a bet. `picks` is an array of {marketId, side}: 1 pick = single, more =

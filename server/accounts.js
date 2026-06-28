@@ -87,4 +87,18 @@ async function allLinked() {
   }
 }
 
-module.exports = { register, authenticate, linkRiot, listRiot, unlinkRiot, allLinked };
+// Other registered users (for the 1v1 opponent picker), newest excluded self.
+async function listUsers(exclude) {
+  try {
+    const res = await db.query(
+      `SELECT username FROM users WHERE username <> $1 ORDER BY username`,
+      [exclude || '']
+    );
+    return res.rows;
+  } catch (err) {
+    if (!isDisabled(err)) console.error('[accounts] listUsers:', err.message);
+    return [];
+  }
+}
+
+module.exports = { register, authenticate, linkRiot, listRiot, unlinkRiot, allLinked, listUsers };
